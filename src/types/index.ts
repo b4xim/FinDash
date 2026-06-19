@@ -84,3 +84,24 @@ export interface SessionData {
   isLoggedIn: boolean;
   // Gmail OAuth tokens stored separately in DB
 }
+
+// Loan type for EMI tracker
+export type LoanType = "home" | "car" | "personal" | "education" | "other";
+
+// A single EMI loan entry
+export interface EmiLoan {
+  id: string;
+  name: string;             // e.g. "Home Loan - SBI"
+  lender?: string;          // e.g. "SBI", "HDFC"
+  loan_type: LoanType;
+  principal: number;        // Original loan amount
+  interest_rate: number;    // Annual rate, e.g. 8.5 for 8.5%
+  tenure_months: number;    // Total number of EMIs
+  start_date: string;       // ISO date string: "2024-01-01"
+  emi_amount: number;       // Monthly EMI
+  account?: string;         // Bank account debited
+  notes?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}

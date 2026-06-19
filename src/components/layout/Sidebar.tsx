@@ -4,17 +4,18 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   TrendingUp, LayoutDashboard, CreditCard,
-  PieChart, RefreshCw, Settings, LogOut, ChevronRight,
+  PieChart, RefreshCw, Settings, LogOut, ChevronRight, Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Navigation links — update this array to add new pages
 const NAV_ITEMS = [
-  { href: "/overview",   label: "Overview",   icon: LayoutDashboard },
-  { href: "/spending",   label: "Spending",   icon: CreditCard },
-  { href: "/investing",  label: "Investing",  icon: PieChart },
-  { href: "/sync",       label: "Sync",       icon: RefreshCw },
-  { href: "/settings",   label: "Settings",   icon: Settings },
+  { href: "/overview",   label: "Overview",     icon: LayoutDashboard },
+  { href: "/spending",   label: "Spending",     icon: CreditCard },
+  { href: "/investing",  label: "Investing",    icon: PieChart },
+  { href: "/emi",        label: "EMI Tracker",  icon: Landmark },
+  { href: "/sync",       label: "Sync",         icon: RefreshCw },
+  { href: "/settings",   label: "Settings",     icon: Settings },
 ];
 
 export default function Sidebar() {
