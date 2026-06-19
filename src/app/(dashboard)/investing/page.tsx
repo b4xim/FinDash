@@ -2,7 +2,8 @@
 
 // ============================================================
 // Investing Page — holdings table, allocation pie, performance,
-// add/edit/delete, and "Refresh Prices" for auto-synced mutual funds
+// add/edit/delete, and "Refresh Prices" for auto-synced mutual
+// funds (via MFapi.in) and stocks/ETFs (via Yahoo Finance)
 // ============================================================
 
 import { useState, useEffect, useCallback } from "react";
@@ -80,22 +81,27 @@ export default function InvestingPage() {
     await fetchHoldings();
   }
 
-  // Refresh prices — calls MFapi.in via our backend for all linked mutual funds
+  // Refresh prices — calls our backend, which fetches MFapi.in NAVs for
+  // linked mutual funds and Yahoo Finance quotes for stocks/ETFs with a symbol
   async function handleRefreshPrices() {
     setRefreshing(true);
     setRefreshMsg(null);
     const res = await fetch("/api/holdings/refresh-prices", { method: "POST" });
     const data = await res.json();
 
-    if (data.updated === 0 && data.failed === 0) {
-      setRefreshMsg("No mutual funds linked for auto-sync yet");
+    if (!res.ok) {
+      setRefreshMsg(data.error || "Refresh failed");
+    } else if (data.updated === 0 && data.failed === 0 && data.skipped === 0) {
+      setRefreshMsg("No holdings linked for auto-sync yet — add a fund via search or a stock/ETF symbol");
     } else {
-      setRefreshMsg(`Updated ${data.updated} fund${data.updated !== 1 ? "s" : ""}${data.failed > 0 ? `, ${data.failed} failed` : ""}`);
+      const parts = [`Updated ${data.updated}`];
+      if (data.failed > 0) parts.push(`${data.failed} failed`);
+      setRefreshMsg(parts.join(", "));
     }
 
     await fetchHoldings();
     setRefreshing(false);
-    setTimeout(() => setRefreshMsg(null), 5000);
+    setTimeout(() => setRefreshMsg(null), 6000);
   }
 
   // Derived totals
@@ -114,7 +120,7 @@ export default function InvestingPage() {
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value);
 
-  const hasMutualFunds = holdings.some(h => h.mfapi_code);
+  const hasAutoSyncHoldings = holdings.some(h => h.mfapi_code || ((h.asset_type === "stock" || h.asset_type === "etf") && h.ticker));
 
   return (
     <>
@@ -179,7 +185,7 @@ export default function InvestingPage() {
             <p className="font-display font-medium text-text-primary mb-1">Holdings</p>
             <p className="text-text-muted text-sm mb-4">
               {holdings.length} holding{holdings.length !== 1 ? "s" : ""} tracked
-              {hasMutualFunds && " · mutual fund NAVs auto-sync"}
+              {hasAutoSyncHoldings && " · prices auto-sync"}
             </p>
 
             <div className="flex flex-wrap gap-3 mt-auto">
@@ -202,8 +208,9 @@ export default function InvestingPage() {
 
             <p className="text-text-muted text-xs mt-4 leading-relaxed">
               <strong className="text-text-secondary">How prices work:</strong> Mutual funds linked via search
-              auto-fetch their NAV from MFapi.in when you click Refresh Prices. Stocks, ETFs, FDs and PPF
-              need their current price updated manually — edit the holding to update it.
+              auto-fetch their NAV from MFapi.in. Stocks and ETFs with an NSE symbol (e.g. RELIANCE.NS) auto-fetch
+              their quote from Yahoo Finance. Both update together when you click Refresh Prices. FDs, PPF, and
+              holdings without a linked symbol need their current price updated manually — edit the holding to update it.
             </p>
           </div>
         </div>

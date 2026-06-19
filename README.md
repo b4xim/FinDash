@@ -365,3 +365,44 @@ git push -u origin main
 4. Try a sync to confirm everything works end-to-end in production
 
 You now have a fully private, fully functional personal finance dashboard running on your own domain, for free.
+
+---
+
+## Add-on: Yahoo Finance Stock/ETF Price Auto-Sync
+
+This update adds automatic price refresh for **stocks and ETFs**, on top of the mutual fund NAV sync from Chunk 3. Both now share the same "Refresh Prices" button.
+
+### Step 1 — Install the new package
+
+```bash
+npm install
+```
+(`yahoo-finance2` was added to `package.json` — no other setup needed, no API key required.)
+
+### Step 2 — No schema changes needed
+
+This reuses the existing `ticker` column on `holdings` — no migration required.
+
+### Step 3 — Test it
+
+1. Go to **Investing** → **Add Holding**
+2. Asset Type → **Stock**
+3. Name: `Reliance Industries`
+4. Symbol: `RELIANCE.NS` (NSE symbol with `.NS` suffix — see the helper text in the form)
+5. Units, Avg Buy Price → leave Current Price blank → **Add Holding**
+6. Click **Refresh Prices** at the top — the stock's price should update to the live Yahoo Finance quote, same as mutual funds already do
+7. Try an invalid symbol (e.g. `FAKESYMBOL.NS`) on another holding — refresh should still succeed for everything else and just report that one as failed, never breaking the whole batch
+
+### How it works
+
+| Asset type | Price source | Trigger |
+|---|---|---|
+| Mutual Fund (linked via search) | MFapi.in | Refresh Prices button |
+| Stock / ETF (symbol with `.NS`) | Yahoo Finance (`yahoo-finance2`) | Refresh Prices button |
+| FD / PPF / Other | Manual only | Edit the holding |
+
+Each holding refreshes independently on the server — if Yahoo Finance is down, rate-limited, or a symbol is wrong, that one holding is marked "failed" in the response and everything else still updates normally.
+
+### Symbol format note
+
+Yahoo Finance needs the exchange suffix to find Indian stocks — `RELIANCE` alone won't resolve, but `RELIANCE.NS` (NSE) will. The form reminds you of this under the Symbol field whenever Asset Type is Stock or ETF.

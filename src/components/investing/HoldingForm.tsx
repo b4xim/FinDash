@@ -2,7 +2,9 @@
 
 // ============================================================
 // HoldingForm — shared form for Add and Edit holding modals
-// Shows the MF search box only when asset_type === "mutual_fund"
+// - Mutual Fund: shows MFSearchInput, auto-fills name + mfapi_code
+// - Stock/ETF: shows a Symbol field (NSE .NS suffix) for Yahoo Finance sync
+// - FD/PPF/Other: plain optional reference field, no auto-sync
 // ============================================================
 
 import { useState } from "react";
@@ -107,15 +109,36 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
         </div>
       )}
 
-      {/* Ticker — relevant for stocks/ETFs */}
-      {!isMutualFund && (
+      {/* Ticker — required for stocks/ETFs, drives Yahoo Finance auto-refresh */}
+      {!isMutualFund && (form.asset_type === "stock" || form.asset_type === "etf") && (
         <div>
-          <label className="label">Ticker <span className="text-text-muted">(optional)</span></label>
+          <label className="label flex items-center gap-1.5">
+            Symbol
+            <Zap size={12} className="text-gold" />
+            <span className="text-text-muted font-normal text-xs">(auto-syncs price)</span>
+          </label>
+          <input
+            type="text"
+            value={form.ticker}
+            onChange={e => set("ticker", e.target.value.toUpperCase())}
+            placeholder="e.g. RELIANCE.NS, HDFCBANK.NS"
+            className="input"
+          />
+          <p className="text-text-muted text-xs mt-1">
+            Use NSE symbol with .NS suffix — e.g. RELIANCE.NS, HDFCBANK.NS. Leave blank to enter prices manually instead.
+          </p>
+        </div>
+      )}
+
+      {/* Ticker — optional free text for FD/PPF/Other, no auto-sync */}
+      {!isMutualFund && form.asset_type !== "stock" && form.asset_type !== "etf" && (
+        <div>
+          <label className="label">Ticker / Reference <span className="text-text-muted">(optional)</span></label>
           <input
             type="text"
             value={form.ticker}
             onChange={e => set("ticker", e.target.value)}
-            placeholder="e.g. RELIANCE, NIFTYBEES"
+            placeholder="e.g. account or certificate number"
             className="input"
           />
         </div>
@@ -151,19 +174,22 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
         </div>
       </div>
 
-      {/* Current price — disabled hint for auto-synced mutual funds */}
+      {/* Current price — hint changes based on whether this holding will auto-sync */}
       <div>
         <label className="label">
           Current Price (₹)
           {isMutualFund && form.mfapi_code && (
             <span className="text-emerald-fin text-xs font-normal ml-1.5">— will auto-update via NAV sync</span>
           )}
+          {!isMutualFund && (form.asset_type === "stock" || form.asset_type === "etf") && form.ticker && (
+            <span className="text-emerald-fin text-xs font-normal ml-1.5">— will auto-update via Yahoo Finance</span>
+          )}
         </label>
         <input
           type="number"
           value={form.current_price}
           onChange={e => set("current_price", e.target.value)}
-          placeholder={typeof form.buy_price === "number" ? String(form.buy_price) : form.buy_price || "0.00"}
+          placeholder={form.buy_price || "0.00"}
           min="0"
           step="0.01"
           className="input"
@@ -171,6 +197,8 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
         <p className="text-text-muted text-xs mt-1">
           {isMutualFund
             ? "Leave blank to use buy price initially — refresh prices later to fetch the real NAV."
+            : form.ticker && (form.asset_type === "stock" || form.asset_type === "etf")
+            ? "Leave blank to use buy price initially — refresh prices later to fetch the real quote."
             : "Update this manually whenever you check the latest price."}
         </p>
       </div>

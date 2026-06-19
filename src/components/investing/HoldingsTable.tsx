@@ -24,6 +24,13 @@ interface HoldingsTableProps {
   onDelete: (h: Holding) => void;
 }
 
+// A holding auto-syncs if it's a linked mutual fund, or a stock/ETF with a symbol set
+function isAutoSync(h: Holding): boolean {
+  if (h.mfapi_code) return true;
+  if ((h.asset_type === "stock" || h.asset_type === "etf") && h.ticker) return true;
+  return false;
+}
+
 // Format the "last updated" relative time
 function relativeTime(iso?: string): string {
   if (!iso) return "never";
@@ -76,7 +83,7 @@ export default function HoldingsTable({ holdings, onEdit, onDelete }: HoldingsTa
                 <td className="table-cell">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{h.name}</span>
-                    {h.mfapi_code && <Zap size={12} className="text-gold flex-shrink-0" />}
+                    {isAutoSync(h) && <Zap size={12} className="text-gold flex-shrink-0" />}
                   </div>
                   {h.ticker && <p className="text-text-muted text-xs mt-0.5">{h.ticker}</p>}
                 </td>
@@ -96,7 +103,7 @@ export default function HoldingsTable({ holdings, onEdit, onDelete }: HoldingsTa
                 <td className="table-cell text-right font-mono text-text-secondary">{formatINR(h.buy_price)}</td>
                 <td className="table-cell text-right font-mono">
                   {formatINR(h.current_price)}
-                  {h.mfapi_code && (
+                  {isAutoSync(h) && (
                     <div className="flex items-center justify-end gap-1 text-text-muted text-[10px] mt-0.5">
                       <Clock size={9} /> {relativeTime(h.price_updated_at)}
                     </div>

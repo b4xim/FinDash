@@ -24,9 +24,6 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "FinDash — Personal Finance",
   description: "Private personal finance dashboard",
-  icons: {
-    icon: "/favicon.svg",
-  },
 };
 
 export default function RootLayout({
