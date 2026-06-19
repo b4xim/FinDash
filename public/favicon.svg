@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background -->
+  <rect width="64" height="64" rx="14" fill="#0F172A"/>
+
+  <!-- Chart bars -->
+  <rect x="14" y="36" width="6" height="14" rx="2" fill="#38BDF8"/>
+  <rect x="26" y="28" width="6" height="22" rx="2" fill="#38BDF8"/>
+  <rect x="38" y="20" width="6" height="30" rx="2" fill="#38BDF8"/>
+
+  <!-- Growth line -->
+  <path
+    d="M14 30 L28 22 L40 26 L52 14"
+    fill="none"
+    stroke="#22C55E"
+    stroke-width="4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Arrow -->
+  <path
+    d="M46 14 H52 V20"
+    fill="none"
+    stroke="#22C55E"
+    stroke-width="4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
