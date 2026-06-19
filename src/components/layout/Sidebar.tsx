@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   TrendingUp, LayoutDashboard, CreditCard,
   PieChart, RefreshCw, Settings, LogOut, ChevronRight, Landmark,
-  Flag, Target, X,
+  Flag, Target, X, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { href: "/budget",     label: "Budget",       icon: Target },
   { href: "/goals",      label: "Goals",        icon: Flag },
   { href: "/investing",  label: "Investing",    icon: PieChart },
+  { href: "/smart-picks",label: "Smart Picks",  icon: Sparkles },
   { href: "/emi",        label: "EMI Tracker",  icon: Landmark },
   { href: "/sync",       label: "Sync",         icon: RefreshCw },
   { href: "/settings",   label: "Settings",     icon: Settings },

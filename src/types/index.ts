@@ -151,3 +151,25 @@ export interface EmiLoan {
   created_at: string;
   updated_at: string;
 }
+
+// ── Smart Picks (AI buy recommendations) ──
+
+export type PickSignal = "Strong Buy" | "Buy" | "Watch";
+export type RiskLevel = "Low" | "Medium" | "High";
+
+export interface SmartPick {
+  name: string;             // e.g. "HDFC Bank"
+  ticker: string;           // e.g. "HDFCBANK.NS" or MF scheme code
+  assetType: "stock" | "mutual_fund";
+  currentPrice: number;
+  returnPct: number;        // 1Y return %
+  signal: PickSignal;
+  riskLevel: RiskLevel;
+  rationale: string;        // AI-generated buy rationale (1-2 sentences)
+  metrics: {
+    pe?: number;            // P/E ratio (stocks)
+    high52w?: number;       // 52-week high
+    low52w?: number;        // 52-week low
+    cagr3y?: number;        // 3Y CAGR (mutual funds)
+  };
+}
