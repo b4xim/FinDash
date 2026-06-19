@@ -5,7 +5,7 @@
 
 import { redirect } from "next/navigation";
 import { requireAuth } from "@/lib/session";
-import Sidebar from "@/components/layout/Sidebar";
+import DashboardShell from "@/components/layout/DashboardShell";
 
 export default async function DashboardLayout({
   children,
@@ -18,12 +18,5 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 bg-navy-950">
-        {children}
-      </div>
-    </div>
-  );
+  return <DashboardShell>{children}</DashboardShell>;
 }

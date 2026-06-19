@@ -139,3 +139,31 @@
               linear-gradient(135deg, #E8253A, #C41E31, #E8253A) border-box;
   border: 1px solid transparent;
 }
+
+/* ============================================================
+   Mobile / safe-area utilities
+   ============================================================ */
+
+/* iPhone bottom notch padding for fixed bottom nav */
+.h-safe-area-bottom {
+  height: env(safe-area-inset-bottom, 0px);
+}
+
+/* Ensure tap targets are large enough on mobile */
+@media (max-width: 768px) {
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger {
+    min-height: 44px;
+  }
+
+  .input {
+    min-height: 44px;
+    font-size: 16px; /* prevent iOS zoom on focus */
+  }
+
+  .select {
+    font-size: 16px;
+  }
+}

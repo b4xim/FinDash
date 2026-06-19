@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   TrendingUp, LayoutDashboard, CreditCard,
   PieChart, RefreshCw, Settings, LogOut, ChevronRight, Landmark,
-  Flag, Target,
+  Flag, Target, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +21,12 @@ const NAV_ITEMS = [
   { href: "/settings",   label: "Settings",     icon: Settings },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -31,11 +36,10 @@ export default function Sidebar() {
     router.refresh();
   }
 
-  return (
-    <aside className="w-64 min-h-screen bg-navy-900 border-r border-white/5 flex flex-col">
-
+  const sidebarContent = (
+    <aside className="w-64 h-full bg-navy-900 border-r border-white/5 flex flex-col">
       {/* Logo */}
-      <div className="px-6 py-6 border-b border-white/5">
+      <div className="px-6 py-6 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gradient-violet rounded-xl flex items-center justify-center shadow-violet-glow flex-shrink-0">
             <TrendingUp size={18} className="text-white" />
@@ -45,10 +49,20 @@ export default function Sidebar() {
             <p className="text-text-muted text-xs mt-0.5">Personal Finance</p>
           </div>
         </div>
+        {/* Close button — mobile only */}
+        {onMobileClose && (
+          <button
+            onClick={onMobileClose}
+            className="md:hidden p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors"
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         <p className="text-text-muted text-xs font-medium uppercase tracking-wider px-3 mb-3">
           Navigation
         </p>
@@ -58,6 +72,7 @@ export default function Sidebar() {
             <Link
               key={href}
               href={href}
+              onClick={onMobileClose}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
                 active
@@ -90,5 +105,40 @@ export default function Sidebar() {
         </button>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* ── Desktop sidebar (always visible on md+) ── */}
+      <div className="hidden md:flex w-64 min-h-screen flex-shrink-0">
+        {sidebarContent}
+      </div>
+
+      {/* ── Mobile drawer overlay ── */}
+      <div
+        className={cn(
+          "fixed inset-0 z-50 md:hidden transition-all duration-300",
+          mobileOpen ? "pointer-events-auto" : "pointer-events-none"
+        )}
+      >
+        {/* Backdrop */}
+        <div
+          className={cn(
+            "absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300",
+            mobileOpen ? "opacity-100" : "opacity-0"
+          )}
+          onClick={onMobileClose}
+        />
+        {/* Drawer panel */}
+        <div
+          className={cn(
+            "absolute left-0 top-0 h-full w-64 transition-transform duration-300 ease-out",
+            mobileOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          {sidebarContent}
+        </div>
+      </div>
+    </>
   );
 }
