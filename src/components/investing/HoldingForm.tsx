@@ -163,7 +163,7 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
           type="number"
           value={form.current_price}
           onChange={e => set("current_price", e.target.value)}
-          placeholder={form.buy_price || "0.00"}
+          placeholder={typeof form.buy_price === "number" ? String(form.buy_price) : form.buy_price || "0.00"}
           min="0"
           step="0.01"
           className="input"
