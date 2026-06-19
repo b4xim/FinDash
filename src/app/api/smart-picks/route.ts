@@ -197,7 +197,7 @@ Respond with ONLY a JSON array. No markdown, no explanation. Example format:
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -212,8 +212,7 @@ Respond with ONLY a JSON array. No markdown, no explanation. Example format:
     );
 
     if (!res.ok) {
-      console.error("Gemini API error:", res.status, await res.text());
-      throw new Error("Gemini API request failed");
+      throw new Error(`Gemini API request failed with status: ${res.status}`);
     }
 
     const json = await res.json();
