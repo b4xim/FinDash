@@ -90,9 +90,10 @@ export async function disconnectGmail(): Promise<void> {
 // ── Senders we care about — used to build the Gmail search query ──
 export const RELEVANT_SENDERS = [
   // Bank/card transaction alerts
-  "credit_cards@icicibank.com",
+  "credit_cards@icici.bank.in",
   "alerts@sbicard.com",
-  "alerts@axisbank.com",
+  "onlinesbicard@sbicard.com",
+  "alerts@axis.bank.in",
   // Investment platforms
   "noreply@zerodha.com",
   "support@groww.in",
