@@ -15,10 +15,15 @@ import { NIFTY_50_TICKERS, TOP_MF_SCHEMES } from "./nifty50";
 import type { SmartPick, PickSignal, RiskLevel } from "@/types";
 
 // ── Yahoo Finance ────────────────────────────────────────────
-// yahoo-finance2 v3 uses ESM so we import it dynamically
-async function getYahooFinance() {
-  const mod = await import("yahoo-finance2");
-  return mod.default;
+// Loose typed interface for the fields we actually use from yahoo-finance2
+interface YFQuote {
+  regularMarketPrice?: number;
+  fiftyTwoWeekHigh?: number;
+  fiftyTwoWeekLow?: number;
+  trailingPE?: number;
+  regularMarketPreviousClose?: number;
+  shortName?: string;
+  longName?: string;
 }
 
 interface StockScreenResult {
@@ -34,7 +39,8 @@ interface StockScreenResult {
 
 // Fetch key metrics for a batch of tickers
 async function screenStocks(): Promise<StockScreenResult[]> {
-  const yahooFinance = await getYahooFinance();
+  // Dynamic import to avoid ESM/CJS issues at build time
+  const yf = await import("yahoo-finance2").then(m => m.default);
   const results: StockScreenResult[] = [];
 
   // Fetch in small batches to avoid rate limits
@@ -43,15 +49,17 @@ async function screenStocks(): Promise<StockScreenResult[]> {
     const batch = NIFTY_50_TICKERS.slice(i, i + batchSize);
     const promises = batch.map(async (ticker) => {
       try {
-        const quote = await yahooFinance.quote(ticker);
+        // Cast via unknown to avoid the complex yahoo-finance2 union type
+        const raw = await yf.quote(ticker);
+        const quote = raw as unknown as YFQuote;
+
         if (!quote || !quote.regularMarketPrice) return null;
 
         const price = quote.regularMarketPrice;
         const high52w = quote.fiftyTwoWeekHigh ?? price;
         const low52w = quote.fiftyTwoWeekLow ?? price;
         const pe = quote.trailingPE ?? 0;
-        const prevClose = quote.regularMarketPreviousClose ?? price;
-        // Approximate 1Y return using 52w range
+        // Approximate 1Y return using distance from 52w low
         const returnPct = low52w > 0 ? ((price - low52w) / low52w) * 100 : 0;
         const distFromLow = low52w > 0 ? ((price - low52w) / (high52w - low52w || 1)) * 100 : 50;
 
