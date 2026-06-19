@@ -21,7 +21,6 @@ interface TransactionFormProps {
 }
 
 export default function TransactionForm({ initial, onSubmit, onCancel, loading }: TransactionFormProps) {
-  // Default to today's date
   const today = new Date().toISOString().split("T")[0];
 
   const [form, setForm] = useState({
@@ -32,6 +31,7 @@ export default function TransactionForm({ initial, onSubmit, onCancel, loading }
     category:    initial?.category    ?? "Other",
     account:     initial?.account     ?? "",
     notes:       initial?.notes       ?? "",
+    necessary:   initial?.necessary   ?? "", // "Necessary" | "Unnecessary" | ""
   });
 
   // Generic field updater — keeps the form DRY
@@ -41,7 +41,12 @@ export default function TransactionForm({ initial, onSubmit, onCancel, loading }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await onSubmit(form as Partial<Transaction>);
+    const payload: Partial<Transaction> = {
+      ...form as unknown as Partial<Transaction>,
+      // Send undefined (not empty string) if untagged so the DB stores NULL
+      necessary: (form.necessary as "Necessary" | "Unnecessary") || undefined,
+    };
+    await onSubmit(payload);
   }
 
   return (
@@ -114,6 +119,36 @@ export default function TransactionForm({ initial, onSubmit, onCancel, loading }
           className="input"
         />
       </div>
+
+      {/* Necessary? — only shown for debit transactions */}
+      {form.type === "debit" && (
+        <div>
+          <label className="label">
+            Necessary? <span className="text-text-muted">(optional)</span>
+          </label>
+          <div className="flex gap-2">
+            {(["", "Necessary", "Unnecessary"] as const).map(opt => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => set("necessary", opt)}
+                className={[
+                  "flex-1 py-2 rounded-xl text-sm font-medium border transition-all duration-150",
+                  form.necessary === opt && opt === "Necessary"
+                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                    : form.necessary === opt && opt === "Unnecessary"
+                    ? "bg-rose-500/15 text-rose-400 border-rose-500/30"
+                    : form.necessary === opt && opt === ""
+                    ? "bg-white/10 text-text-primary border-white/20"
+                    : "bg-surface-overlay text-text-muted border-white/5 hover:border-white/15",
+                ].join(" ")}
+              >
+                {opt === "" ? "No tag" : opt === "Necessary" ? "✓ Necessary" : "✗ Unnecessary"}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Notes (optional) */}
       <div>

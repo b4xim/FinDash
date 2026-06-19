@@ -20,14 +20,15 @@ export async function PATCH(
   const supabase = getSupabaseAdmin();
 
   // Only allow updating these fields — never let source or gmail_msg_id be changed
-  const { date, description, amount, type, category, account, notes } = body;
+  const { date, description, amount, type, category, account, notes, necessary } = body;
 
   const { data, error } = await supabase
     .from("transactions")
-    .update({ date, description, amount: parseFloat(amount), type, category, account, notes })
+    .update({ date, description, amount: parseFloat(amount), type, category, account, notes, necessary: necessary || null })
     .eq("id", params.id)
     .select()
     .single();
+
 
   if (error) {
     console.error("PATCH /api/transactions error:", error);

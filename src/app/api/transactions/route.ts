@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
 
   // Basic validation
-  const { date, description, amount, type, category, account, notes } = body;
+  const { date, description, amount, type, category, account, notes, necessary } = body;
   if (!date || !description || !amount || !type || !category) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("transactions")
-    .insert([{ date, description, amount: parseFloat(amount), type, category, account, notes, source: "manual" }])
+    .insert([{ date, description, amount: parseFloat(amount), type, category, account, notes, necessary: necessary || null, source: "manual" }])
     .select()
     .single();
 
