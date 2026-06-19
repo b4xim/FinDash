@@ -68,7 +68,25 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await onSubmit(form as Partial<Holding>);
+
+    const parseNumberField = (value: string) => {
+      const parsed = parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
+
+    const payload: Partial<Holding> = {
+      name: form.name || undefined,
+      ticker: form.ticker || undefined,
+      asset_type: form.asset_type,
+      units: parseNumberField(form.units),
+      buy_price: parseNumberField(form.buy_price),
+      current_price: parseNumberField(form.current_price),
+      account: form.account || undefined,
+      notes: form.notes || undefined,
+      mfapi_code: form.mfapi_code || undefined,
+    };
+
+    await onSubmit(payload);
   }
 
   const isMutualFund = form.asset_type === "mutual_fund";
