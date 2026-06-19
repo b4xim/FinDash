@@ -17,20 +17,20 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #0D1220;
+    background: #111111;
   }
   ::-webkit-scrollbar-thumb {
-    background: #243049;
+    background: #333333;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #7C5CFC55;
+    background: #E8253A55;
   }
 
   /* Selection colour */
   ::selection {
-    background: #7C5CFC44;
-    color: #F0F4FF;
+    background: #E8253A44;
+    color: #F5F5F5;
   }
 }
 
@@ -120,22 +120,22 @@
    Glow orb background — used on login page
    ============================================================ */
 .login-bg {
-  background: radial-gradient(ellipse 80% 60% at 20% 40%, #7C5CFC18 0%, transparent 60%),
-              radial-gradient(ellipse 60% 80% at 80% 70%, #F5A62318 0%, transparent 60%),
-              #070B18;
+  background: radial-gradient(ellipse 80% 60% at 20% 40%, #E8253A18 0%, transparent 60%),
+              radial-gradient(ellipse 60% 80% at 80% 70%, #FF6B6B12 0%, transparent 60%),
+              #0A0A0A;
 }
 
 /* Grid overlay texture */
 .grid-texture {
   background-image: 
-    linear-gradient(rgba(124, 92, 252, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 92, 252, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(232, 37, 58, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 37, 58, 0.04) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
 /* Animated gradient border */
 .gradient-border {
-  background: linear-gradient(#131929, #131929) padding-box,
-              linear-gradient(135deg, #7C5CFC, #5B3EE0, #7C5CFC) border-box;
+  background: linear-gradient(#1A1A1A, #1A1A1A) padding-box,
+              linear-gradient(135deg, #E8253A, #C41E31, #E8253A) border-box;
   border: 1px solid transparent;
 }

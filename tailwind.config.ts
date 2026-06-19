@@ -9,24 +9,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Design system — deep navy + electric violet + warm gold
+        // Design system — charcoal dark grey + modern crimson red
         navy: {
-          950: "#070B18",
-          900: "#0D1220",
-          800: "#131929",
-          700: "#1C2539",
-          600: "#243049",
+          950: "#0A0A0A",
+          900: "#111111",
+          800: "#1A1A1A",
+          700: "#222222",
+          600: "#2A2A2A",
         },
         violet: {
-          DEFAULT: "#7C5CFC",
-          light: "#9B80FD",
-          dark: "#5B3EE0",
-          glow: "#7C5CFC33",
+          DEFAULT: "#E8253A",
+          light: "#FF3D52",
+          dark: "#C41E31",
+          glow: "#E8253A33",
         },
         gold: {
-          DEFAULT: "#F5A623",
-          light: "#FBBF47",
-          dark: "#D4881A",
+          DEFAULT: "#FF6B6B",
+          light: "#FF8E8E",
+          dark: "#CC4444",
         },
         emerald: {
           fin: "#10D98C",
@@ -37,14 +37,14 @@ const config: Config = {
           "fin-dim": "#FF5C7A22",
         },
         surface: {
-          DEFAULT: "#131929",
-          raised: "#1C2539",
-          overlay: "#243049",
+          DEFAULT: "#1A1A1A",
+          raised: "#222222",
+          overlay: "#2A2A2A",
         },
         text: {
-          primary: "#F0F4FF",
-          secondary: "#8A94B2",
-          muted: "#4A5270",
+          primary: "#F5F5F5",
+          secondary: "#A0A0A0",
+          muted: "#555555",
         },
       },
       fontFamily: {
@@ -53,14 +53,14 @@ const config: Config = {
         mono: ["'JetBrains Mono'", "monospace"],
       },
       backgroundImage: {
-        "gradient-violet": "linear-gradient(135deg, #7C5CFC 0%, #5B3EE0 100%)",
-        "gradient-gold": "linear-gradient(135deg, #F5A623 0%, #D4881A 100%)",
-        "gradient-card": "linear-gradient(145deg, #1C2539 0%, #131929 100%)",
+        "gradient-violet": "linear-gradient(135deg, #E8253A 0%, #C41E31 100%)",
+        "gradient-gold": "linear-gradient(135deg, #FF6B6B 0%, #CC4444 100%)",
+        "gradient-card": "linear-gradient(145deg, #222222 0%, #1A1A1A 100%)",
       },
       boxShadow: {
-        "violet-glow": "0 0 40px rgba(124, 92, 252, 0.25)",
-        "card": "0 4px 24px rgba(0,0,0,0.4)",
-        "card-hover": "0 8px 40px rgba(0,0,0,0.5)",
+        "violet-glow": "0 0 40px rgba(232, 37, 58, 0.25)",
+        "card": "0 4px 24px rgba(0,0,0,0.5)",
+        "card-hover": "0 8px 40px rgba(0,0,0,0.65)",
       },
       animation: {
         "fade-in": "fadeIn 0.4s ease-out",
