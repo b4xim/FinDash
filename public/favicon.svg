@@ -1,36 +1,76 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
+    <!-- Background gradient -->
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#6D28D9"/>
-      <stop offset="100%" stop-color="#A855F7"/>
+      <stop offset="0%" stop-color="#242424"/>
+      <stop offset="100%" stop-color="#141414"/>
     </linearGradient>
+
+    <!-- Red line gradient (left to right, brightens toward tip) -->
+    <linearGradient id="line-grad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#C41E31"/>
+      <stop offset="100%" stop-color="#FF3D52"/>
+    </linearGradient>
+
+    <!-- Area fill gradient (top = red, bottom = transparent) -->
+    <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8253A" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#E8253A" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Glow blur for the line -->
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="1.8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
   <!-- Background -->
-  <rect width="64" height="64" rx="14" fill="url(#bg)" />
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
 
-  <!-- Chart bars -->
-  <rect x="14" y="36" width="5" height="12" rx="2" fill="#FFFFFF" opacity="0.25"/>
-  <rect x="24" y="30" width="5" height="18" rx="2" fill="#FFFFFF" opacity="0.35"/>
-  <rect x="34" y="24" width="5" height="24" rx="2" fill="#FFFFFF" opacity="0.45"/>
+  <!-- Subtle inner border -->
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.5"
+        fill="none" stroke="#ffffff" stroke-opacity="0.05" stroke-width="1.5"/>
 
-  <!-- Rising trend line -->
+  <!-- Subtle grid lines -->
+  <g stroke="#ffffff" stroke-opacity="0.05" stroke-width="0.75">
+    <!-- Horizontal lines -->
+    <line x1="11" y1="20" x2="53" y2="20"/>
+    <line x1="11" y1="30" x2="53" y2="30"/>
+    <line x1="11" y1="40" x2="53" y2="40"/>
+    <!-- Vertical lines -->
+    <line x1="22" y1="14" x2="22" y2="50"/>
+    <line x1="33" y1="14" x2="33" y2="50"/>
+    <line x1="44" y1="14" x2="44" y2="50"/>
+  </g>
+
+  <!-- Area fill under the curve -->
   <path
-    d="M14 42 L28 32 L38 36 L50 20"
-    fill="none"
-    stroke="#FFFFFF"
-    stroke-width="4"
-    stroke-linecap="round"
-    stroke-linejoin="round"
+    d="M11 44 C16 44 18 36 22 33 C26 30 27 34 33 28 C38 23 44 16 53 13 L53 50 L11 50 Z"
+    fill="url(#area-grad)"
   />
 
-  <!-- Arrow head -->
+  <!-- Trend curve -->
   <path
-    d="M44 20 H50 V26"
+    d="M11 44 C16 44 18 36 22 33 C26 30 27 34 33 28 C38 23 44 16 53 13"
     fill="none"
-    stroke="#FFFFFF"
-    stroke-width="4"
+    stroke="url(#line-grad)"
+    stroke-width="3"
     stroke-linecap="round"
     stroke-linejoin="round"
+    filter="url(#glow)"
   />
+
+  <!-- Arrowhead at tip (filled triangle) -->
+  <polygon
+    points="53,13 46,12 49.5,18"
+    fill="#FF3D52"
+    filter="url(#glow)"
+  />
+
+  <!-- Dot at start of line -->
+  <circle cx="11" cy="44" r="2.2" fill="#C41E31" opacity="0.7"/>
 </svg>

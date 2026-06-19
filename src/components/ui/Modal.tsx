@@ -35,16 +35,19 @@ export default function Modal({ open, onClose, title, children, maxWidth = "max-
   if (!open) return null;
 
   return (
-    // Backdrop
+    // Backdrop — flex column so the modal can be top-aligned with scroll on very short screens
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(7,11,24,0.85)", backdropFilter: "blur(4px)" }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      style={{ background: "rgba(10,10,10,0.85)", backdropFilter: "blur(4px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      {/* Modal box */}
-      <div className={`w-full ${maxWidth} bg-surface-raised border border-white/10 rounded-2xl shadow-card animate-slide-up`}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+      {/* Modal box — capped height, header sticky, body scrollable */}
+      <div
+        className={`relative w-full ${maxWidth} my-auto bg-surface-raised border border-white/10 rounded-2xl shadow-card animate-slide-up flex flex-col`}
+        style={{ maxHeight: "90dvh" }}
+      >
+        {/* Sticky header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 flex-shrink-0">
           <h2 className="font-display font-semibold text-text-primary text-lg">{title}</h2>
           <button
             onClick={onClose}
@@ -53,8 +56,8 @@ export default function Modal({ open, onClose, title, children, maxWidth = "max-
             <X size={18} />
           </button>
         </div>
-        {/* Content */}
-        <div className="px-6 py-5">{children}</div>
+        {/* Scrollable content */}
+        <div className="px-6 py-5 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   );
