@@ -40,7 +40,8 @@ interface StockScreenResult {
 // Fetch key metrics for a batch of tickers
 async function screenStocks(): Promise<StockScreenResult[]> {
   // Dynamic import to avoid ESM/CJS issues at build time
-  const yf = await import("yahoo-finance2").then(m => m.default);
+  const YahooFinance = await import("yahoo-finance2").then(m => m.default);
+  const yf = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
   const results: StockScreenResult[] = [];
 
   // Fetch in small batches to avoid rate limits
@@ -196,7 +197,7 @@ Respond with ONLY a JSON array. No markdown, no explanation. Example format:
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
