@@ -3,22 +3,44 @@
 //
 // Refreshes current_price for ALL auto-syncable holdings in one go:
 //   - Mutual Funds  (mfapi_code set)  → api.mfapi.in
-//   - Stocks / ETFs (ticker set)      → Yahoo Finance via yahoo-finance2
+//   - Stocks / ETFs (ticker set)      → Yahoo Finance chart endpoint
 // FD/PPF/Other are skipped — those stay manual, there's no price feed for them.
+//
+// NOTE on Yahoo Finance: we deliberately do NOT use yahoo-finance2's
+// .quote() method here. That method depends on Yahoo's v7/finance/quote
+// endpoint, which requires a "crumb" security token — and Yahoo has been
+// blocking crumb issuance (401/429 errors) intermittently since late 2024,
+// breaking .quote() even for valid, correctly-formatted symbols. Instead
+// we call the v8/finance/chart endpoint directly, which still works
+// without a crumb and returns the same regularMarketPrice we need.
 //
 // Each holding is refreshed independently — one bad symbol or a
 // dead fund code never breaks the rest of the batch. Every
-// failure is captured per-holding in the `errors` list returned
-// to the client instead of throwing.
+// failure is captured per-holding in `results` and returned to
+// the client instead of throwing.
 // ============================================================
 
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import yahooFinance from "yahoo-finance2";
 
 interface MFApiLatestResponse {
   data: { date: string; nav: string }[];
+}
+
+interface YahooChartMeta {
+  regularMarketPrice?: number | null;
+}
+
+interface YahooChartResult {
+  meta?: YahooChartMeta;
+}
+
+interface YahooChartResponse {
+  chart?: {
+    result?: YahooChartResult[];
+    error?: { description?: string } | null;
+  };
 }
 
 interface RefreshResult {
@@ -89,11 +111,20 @@ export async function POST() {
       continue;
     }
 
-    // ── Stock / ETF branch — fetch latest quote from Yahoo Finance ──
+    // ── Stock / ETF branch — fetch latest price from Yahoo Finance chart endpoint ──
     if (holding.ticker && (holding.asset_type === "stock" || holding.asset_type === "etf")) {
       try {
-        const quote = await yahooFinance.quote(holding.ticker);
-        const price = quote?.regularMarketPrice;
+        const chartRes = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(holding.ticker)}?region=US&lang=en-US&includePrePost=false&interval=2m&range=1d`
+        );
+
+        if (!chartRes.ok) {
+          results.push({ name: holding.name, status: "failed", reason: `Yahoo chart endpoint returned ${chartRes.status}` });
+          continue;
+        }
+
+        const chartJson = (await chartRes.json()) as YahooChartResponse;
+        const price = chartJson.chart?.result?.[0]?.meta?.regularMarketPrice;
 
         if (price === undefined || price === null) {
           results.push({ name: holding.name, status: "failed", reason: `No price found for symbol "${holding.ticker}"` });
