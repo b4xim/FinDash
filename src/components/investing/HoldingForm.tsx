@@ -21,6 +21,18 @@ const ASSET_TYPES: { value: Holding["asset_type"]; label: string }[] = [
   { value: "other",       label: "Other" },
 ];
 
+interface FormState {
+  name: string;
+  ticker: string;
+  asset_type: Holding["asset_type"];
+  units: string;
+  buy_price: string;
+  current_price: string;
+  account: string;
+  notes: string;
+  mfapi_code: string;
+}
+
 interface HoldingFormProps {
   initial?: Partial<Holding>;
   onSubmit: (data: Partial<Holding>) => Promise<void>;
@@ -29,19 +41,19 @@ interface HoldingFormProps {
 }
 
 export default function HoldingForm({ initial, onSubmit, onCancel, loading }: HoldingFormProps) {
-  const [form, setForm] = useState({
-    name:          initial?.name          ?? "",
-    ticker:        initial?.ticker        ?? "",
-    asset_type:    initial?.asset_type    ?? "mutual_fund" as Holding["asset_type"],
-    units:         initial?.units         ?? "",
-    buy_price:     initial?.buy_price     ?? "",
-    current_price: initial?.current_price ?? "",
-    account:       initial?.account       ?? "",
-    notes:         initial?.notes         ?? "",
-    mfapi_code:    initial?.mfapi_code    ?? "",
+  const [form, setForm] = useState<FormState>({
+    name:          initial?.name ?? "",
+    ticker:        initial?.ticker ?? "",
+    asset_type:    initial?.asset_type ?? "mutual_fund",
+    units:         initial?.units?.toString() ?? "",
+    buy_price:     initial?.buy_price?.toString() ?? "",
+    current_price: initial?.current_price?.toString() ?? "",
+    account:       initial?.account ?? "",
+    notes:         initial?.notes ?? "",
+    mfapi_code:    initial?.mfapi_code ?? "",
   });
 
-  function set(field: string, value: string) {
+  function set(field: keyof FormState, value: string) {
     setForm(prev => ({ ...prev, [field]: value }));
   }
 
@@ -189,7 +201,7 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
           type="number"
           value={form.current_price}
           onChange={e => set("current_price", e.target.value)}
-          placeholder={form.buy_price || "0.00"}
+          placeholder={form.buy_price !== "" ? form.buy_price : "0.00"}
           min="0"
           step="0.01"
           className="input"
