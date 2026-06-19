@@ -6,6 +6,9 @@
 //   - Category breakdown for pie chart
 //   - Last 6 months spend + income for bar chart
 //   - Total investment value (from holdings table)
+//   - Insight metrics: savings rate, avg daily spend, biggest expense, peak day
+//   - Budget alerts: categories near/over their limit
+//   - Necessary vs Unnecessary breakdown
 // ============================================================
 
 import { NextResponse } from "next/server";
@@ -29,14 +32,13 @@ export async function GET() {
     return { start, end, label };
   }
 
-  // ── This month's transactions ──
+  // ── This month's transactions (full fields for insights) ──
   const thisMonth = monthRange(0);
   const { data: thisMonthTxns } = await supabase
     .from("transactions")
-    .select("amount, type, category, necessary")
+    .select("amount, type, category, necessary, date, description")
     .gte("date", thisMonth.start)
     .lte("date", thisMonth.end);
-
 
   // ── Last month's transactions (for % change) ──
   const lastMonth = monthRange(-1);
@@ -65,15 +67,11 @@ export async function GET() {
   const { data: holdings } = await supabase
     .from("holdings")
     .select("units, current_price, buy_price");
-  const investmentsTotal = holdings?.reduce((s, h) => s + h.units * h.current_price, 0) ?? 0;
+  const investmentsTotal    = holdings?.reduce((s, h) => s + h.units * h.current_price, 0) ?? 0;
   const investmentsInvested = holdings?.reduce((s, h) => s + h.units * h.buy_price, 0) ?? 0;
   const investmentsGainLoss = investmentsTotal - investmentsInvested;
 
-  // ── All-time cash flow (for net worth) ──
-  // Net worth = (all-time income − all-time spend) + current investment value
-  // This treats "Investment" category transactions as a transfer (money moved
-  // into holdings, not lost), so we exclude that category from the cash calc
-  // to avoid double-counting it alongside the holdings table.
+  // ── All-time cash flow (for net worth + emergency fund) ──
   const { data: allTxns } = await supabase
     .from("transactions")
     .select("amount, type, category");
@@ -85,7 +83,8 @@ export async function GET() {
     ?.filter(t => t.type === "debit" && t.category !== "Investment")
     .reduce((s, t) => s + Number(t.amount), 0) ?? 0;
 
-  const netWorth = (allTimeIncome - allTimeSpend) + investmentsTotal;
+  const netWorth  = (allTimeIncome - allTimeSpend) + investmentsTotal;
+  const netCash   = allTimeIncome - allTimeSpend; // savings without investments
 
   // ── Aggregate this month ──
   const thisSpend  = thisMonthTxns?.filter(t => t.type === "debit").reduce((s, t)  => s + Number(t.amount), 0) ?? 0;
@@ -95,27 +94,58 @@ export async function GET() {
 
   // ── Category breakdown (this month debits only) ──
   const categoryMap: Record<string, number> = {};
-  thisMonthTxns
-    ?.filter(t => t.type === "debit")
-    .forEach(t => {
-      categoryMap[t.category] = (categoryMap[t.category] ?? 0) + Number(t.amount);
-    });
+  const thisMonthDebits = thisMonthTxns?.filter(t => t.type === "debit") ?? [];
+  thisMonthDebits.forEach(t => {
+    categoryMap[t.category] = (categoryMap[t.category] ?? 0) + Number(t.amount);
+  });
   const categoryBreakdown = Object.entries(categoryMap)
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value);
 
-  // ── Necessary vs Unnecessary (this month debits only) ──
-  const thisMonthDebits = thisMonthTxns?.filter(t => t.type === "debit") ?? [];
-  const necessarySpend = thisMonthDebits
-    .filter(t => t.necessary === "Necessary")
-    .reduce((s, t) => s + Number(t.amount), 0);
-  const unnecessarySpend = thisMonthDebits
-    .filter(t => t.necessary === "Unnecessary")
-    .reduce((s, t) => s + Number(t.amount), 0);
-  // Transactions without a necessary label (manual/gmail)
-  const untaggedSpend = thisMonthDebits
-    .filter(t => !t.necessary)
-    .reduce((s, t) => s + Number(t.amount), 0);
+  // ── Necessary vs Unnecessary ──
+  const necessarySpend   = thisMonthDebits.filter(t => t.necessary === "Necessary").reduce((s, t) => s + Number(t.amount), 0);
+  const unnecessarySpend = thisMonthDebits.filter(t => t.necessary === "Unnecessary").reduce((s, t) => s + Number(t.amount), 0);
+  const untaggedSpend    = thisMonthDebits.filter(t => !t.necessary).reduce((s, t) => s + Number(t.amount), 0);
+
+  // ── Insight metrics ──
+  const daysElapsed        = Math.max(now.getDate(), 1);
+  const daysInMonth        = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const avgDailySpend      = thisSpend / daysElapsed;
+  const projectedMonthSpend = avgDailySpend * daysInMonth;
+  const savingsRate        = thisIncome > 0 ? ((thisIncome - thisSpend) / thisIncome) * 100 : null;
+
+  // Biggest single expense this month
+  const biggestExpense = thisMonthDebits.reduce<{ description: string; amount: number; category: string } | null>(
+    (max, t) => Number(t.amount) > (max?.amount ?? 0)
+      ? { description: t.description, amount: Number(t.amount), category: t.category }
+      : max,
+    null
+  );
+
+  // Peak spend day of week (0=Sun … 6=Sat)
+  const dayTotals = [0, 0, 0, 0, 0, 0, 0];
+  thisMonthDebits.forEach(t => {
+    const day = new Date(t.date + "T00:00:00").getDay();
+    dayTotals[day] += Number(t.amount);
+  });
+  const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const peakDayIdx  = dayTotals.indexOf(Math.max(...dayTotals));
+  const topSpendDay = dayTotals[peakDayIdx] > 0 ? DAY_NAMES[peakDayIdx] : null;
+
+  // Emergency fund months (auto-calc: net cash / avg last-3-month spend)
+  const last3MonthSpends = trendData.slice(-3).map(d => d.spend).filter(s => s > 0);
+  const avgMonthlySpend  = last3MonthSpends.length > 0
+    ? last3MonthSpends.reduce((a, b) => a + b, 0) / last3MonthSpends.length
+    : 1;
+  const emergencyMonths  = avgMonthlySpend > 0 ? netCash / avgMonthlySpend : 0;
+
+  // ── Budget alerts ──
+  const { data: budgetLimits } = await supabase.from("budget_limits").select("*");
+  const budgetAlerts = (budgetLimits ?? []).map(bl => {
+    const spent = categoryMap[bl.category] ?? 0;
+    const pct   = bl.monthly_limit > 0 ? (spent / bl.monthly_limit) * 100 : 0;
+    return { category: bl.category, spent, limit: bl.monthly_limit, pct, alertAt: bl.alert_at_pct };
+  });
 
   return NextResponse.json({
     thisMonth: { spend: thisSpend, income: thisIncome },
@@ -123,8 +153,18 @@ export async function GET() {
     investmentsTotal,
     investmentsGainLoss,
     netWorth,
+    netCash,
     categoryBreakdown,
     trendData,
     necessaryBreakdown: { necessary: necessarySpend, unnecessary: unnecessarySpend, untagged: untaggedSpend },
+    // New insight fields
+    savingsRate,
+    avgDailySpend,
+    projectedMonthSpend,
+    biggestExpense,
+    topSpendDay,
+    emergencyMonths,
+    avgMonthlySpend,
+    budgetAlerts,
   });
 }

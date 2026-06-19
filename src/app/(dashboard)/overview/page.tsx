@@ -1,8 +1,8 @@
 "use client";
 
 // ============================================================
-// Overview Page — live net worth, spend/income stats, charts
-// Fetches aggregated data from /api/stats
+// Overview Page — net worth, spend/income, charts, insights,
+//                 budget alerts, necessary vs unnecessary
 // ============================================================
 
 import { useState, useEffect } from "react";
@@ -13,20 +13,17 @@ import {
   TrendingUp, TrendingDown, Wallet, PiggyBank,
   ArrowUpRight, ArrowDownRight, Minus,
   CheckCircle2, XCircle, HelpCircle,
+  Zap, Calendar, Trophy, BarChart3, AlertTriangle, Target,
 } from "lucide-react";
 import { formatINR, pctChange } from "@/lib/utils";
 import Link from "next/link";
 
 // ── Shared StatCard ──────────────────────────────────────────
 function StatCard({
-  label, value, change, icon: Icon, accent, changeLabel = "vs last month",
+  label, value, change, icon: Icon, accent, changeLabel = "vs last month", sub,
 }: {
-  label: string;
-  value: string;
-  change?: number | null;
-  icon: React.ElementType;
-  accent: string;
-  changeLabel?: string;
+  label: string; value: string; change?: number | null;
+  icon: React.ElementType; accent: string; changeLabel?: string; sub?: string;
 }) {
   const positive = (change ?? 0) >= 0;
   return (
@@ -35,6 +32,7 @@ function StatCard({
         <div>
           <p className="stat-label">{label}</p>
           <p className="stat-value mt-1">{value}</p>
+          {sub && <p className="text-text-muted text-xs mt-0.5">{sub}</p>}
         </div>
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${accent}`}>
           <Icon size={20} className="text-white" />
@@ -42,13 +40,9 @@ function StatCard({
       </div>
       {change !== null && change !== undefined && (
         <div className="flex items-center gap-1">
-          {change === 0 ? (
-            <Minus size={14} className="text-text-muted" />
-          ) : positive ? (
-            <ArrowUpRight size={14} className="text-emerald-fin" />
-          ) : (
-            <ArrowDownRight size={14} className="text-rose-fin" />
-          )}
+          {change === 0 ? <Minus size={14} className="text-text-muted" />
+            : positive ? <ArrowUpRight size={14} className="text-emerald-fin" />
+            : <ArrowDownRight size={14} className="text-rose-fin" />}
           <span className={`text-xs font-mono ${change === 0 ? "text-text-muted" : positive ? "text-emerald-fin" : "text-rose-fin"}`}>
             {change === 0 ? "No change" : `${Math.abs(change).toFixed(1)}%`}
           </span>
@@ -59,22 +53,46 @@ function StatCard({
   );
 }
 
-// ── Types ────────────────────────────────────────────────────
-interface NecessaryBreakdown {
-  necessary: number;
-  unnecessary: number;
-  untagged: number;
+// ── Insight mini-tile ────────────────────────────────────────
+function InsightTile({ icon: Icon, iconClass, label, value, sub }: {
+  icon: React.ElementType; iconClass: string; label: string; value: string; sub?: string;
+}) {
+  return (
+    <div className="card p-5 flex items-start gap-3">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${iconClass}`}>
+        <Icon size={17} className="text-white" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-text-muted text-xs font-medium uppercase tracking-wider">{label}</p>
+        <p className="font-mono font-semibold text-text-primary text-lg mt-0.5 truncate">{value}</p>
+        {sub && <p className="text-text-muted text-xs mt-0.5">{sub}</p>}
+      </div>
+    </div>
+  );
 }
 
+// ── Types ────────────────────────────────────────────────────
+interface NecessaryBreakdown { necessary: number; unnecessary: number; untagged: number }
+interface BiggestExpense     { description: string; amount: number; category: string }
+interface BudgetAlert        { category: string; spent: number; limit: number; pct: number; alertAt: number }
+
 interface StatsResponse {
-  thisMonth: { spend: number; income: number };
-  lastMonth: { spend: number; income: number };
-  investmentsTotal: number;
+  thisMonth:           { spend: number; income: number };
+  lastMonth:           { spend: number; income: number };
+  investmentsTotal:    number;
   investmentsGainLoss: number;
-  netWorth: number;
-  categoryBreakdown: { name: string; value: number }[];
-  trendData: { month: string; spend: number; income: number }[];
-  necessaryBreakdown: NecessaryBreakdown;
+  netWorth:            number;
+  netCash:             number;
+  categoryBreakdown:   { name: string; value: number }[];
+  trendData:           { month: string; spend: number; income: number }[];
+  necessaryBreakdown:  NecessaryBreakdown;
+  savingsRate:         number | null;
+  avgDailySpend:       number;
+  projectedMonthSpend: number;
+  biggestExpense:      BiggestExpense | null;
+  topSpendDay:         string | null;
+  emergencyMonths:     number;
+  budgetAlerts:        BudgetAlert[];
 }
 
 // ── Page ─────────────────────────────────────────────────────
@@ -110,18 +128,46 @@ export default function OverviewPage() {
   const necessaryPct   = hasNecsData ? (nb.necessary   / taggedTotal) * 100 : 0;
   const unnecessaryPct = hasNecsData ? (nb.unnecessary / taggedTotal) * 100 : 0;
 
+  // Budget alerts (only show those at/above threshold)
+  const activeAlerts = (stats.budgetAlerts ?? []).filter(a => a.pct >= a.alertAt);
+
   return (
     <>
       <Header title="Overview" subtitle="Your financial snapshot" />
 
       <main className="flex-1 p-6 space-y-6 animate-fade-in">
 
+        {/* ── Budget alert banner ── */}
+        {activeAlerts.length > 0 && (
+          <div className="card p-4 border border-amber-400/20 bg-amber-400/5 flex items-start gap-3">
+            <AlertTriangle size={18} className="text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-text-primary text-sm font-medium">Budget alerts this month</p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {activeAlerts.map(a => (
+                  <span key={a.category} className="text-xs px-2.5 py-1 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20">
+                    {a.category}: {a.pct.toFixed(0)}% of {formatINR(a.limit)}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Link href="/budget" className="text-xs text-violet-light hover:underline whitespace-nowrap">Manage →</Link>
+          </div>
+        )}
+
         {/* ── Top stat tiles ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard label="Net Worth"            value={formatINR(stats.netWorth, true)}           change={null}                                                                                                                  icon={Wallet}      accent="bg-gradient-violet" />
-          <StatCard label="This Month's Spend"   value={formatINR(stats.thisMonth.spend, true)}    change={spendChange === 0 ? 0 : -spendChange}                                                                                  icon={TrendingDown} accent="bg-rose-fin/20" />
-          <StatCard label="This Month's Income"  value={formatINR(stats.thisMonth.income, true)}   change={incomeChange}                                                                                                           icon={TrendingUp}   accent="bg-emerald-fin/20" />
-          <StatCard label="Investments"          value={formatINR(stats.investmentsTotal, true)}   change={stats.investmentsGainLoss === 0 ? 0 : (stats.investmentsGainLoss / Math.max(stats.investmentsTotal - stats.investmentsGainLoss, 1)) * 100} changeLabel="overall returns" icon={PiggyBank} accent="bg-gradient-gold" />
+          <StatCard label="Net Worth"           value={formatINR(stats.netWorth, true)}         change={null}                                                                                                                   icon={Wallet}       accent="bg-gradient-violet" />
+          <StatCard label="This Month's Spend"  value={formatINR(stats.thisMonth.spend, true)}  change={spendChange === 0 ? 0 : -spendChange}                                                                                   icon={TrendingDown}  accent="bg-rose-fin/20" />
+          <StatCard label="This Month's Income" value={formatINR(stats.thisMonth.income, true)} change={incomeChange}                                                                                                            icon={TrendingUp}    accent="bg-emerald-fin/20" />
+          <StatCard
+            label="Investments"
+            value={formatINR(stats.investmentsTotal, true)}
+            change={stats.investmentsGainLoss === 0 ? 0 : (stats.investmentsGainLoss / Math.max(stats.investmentsTotal - stats.investmentsGainLoss, 1)) * 100}
+            changeLabel="overall returns"
+            icon={PiggyBank}
+            accent="bg-gradient-gold"
+          />
         </div>
 
         {/* ── Charts ── */}
@@ -137,6 +183,78 @@ export default function OverviewPage() {
             <CategoryPieChart data={stats.categoryBreakdown} />
           </div>
         </div>
+
+        {/* ── Insight tiles ── */}
+        <div>
+          <h2 className="font-display font-semibold text-text-primary mb-3 flex items-center gap-2">
+            <Zap size={16} className="text-amber-400" /> Insights
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <InsightTile
+              icon={TrendingUp}
+              iconClass={stats.savingsRate !== null && stats.savingsRate >= 0 ? "bg-emerald-500/70" : "bg-rose-500/70"}
+              label="Savings Rate"
+              value={stats.savingsRate !== null ? `${stats.savingsRate.toFixed(1)}%` : "—"}
+              sub="of income saved this month"
+            />
+            <InsightTile
+              icon={BarChart3}
+              iconClass="bg-violet/70"
+              label="Avg Daily Spend"
+              value={formatINR(stats.avgDailySpend)}
+              sub={`Projected: ${formatINR(stats.projectedMonthSpend)} this month`}
+            />
+            <InsightTile
+              icon={Trophy}
+              iconClass="bg-amber-500/70"
+              label="Biggest Expense"
+              value={stats.biggestExpense ? formatINR(stats.biggestExpense.amount) : "—"}
+              sub={stats.biggestExpense ? stats.biggestExpense.description : "No expenses yet"}
+            />
+            <InsightTile
+              icon={Calendar}
+              iconClass="bg-cyan-500/70"
+              label="Peak Spend Day"
+              value={stats.topSpendDay ?? "—"}
+              sub="Most spend happens on this day"
+            />
+          </div>
+        </div>
+
+        {/* ── Budget progress (if limits set) ── */}
+        {stats.budgetAlerts && stats.budgetAlerts.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-display font-semibold text-text-primary flex items-center gap-2">
+                <Target size={16} className="text-violet-light" /> Budget Progress
+              </h2>
+              <Link href="/budget" className="text-xs text-violet-light hover:underline">View all →</Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {stats.budgetAlerts.slice(0, 6).map(bl => {
+                const clampedPct = Math.min(bl.pct, 100);
+                const barColor   = bl.pct >= 100 ? "bg-rose-500" : bl.pct >= bl.alertAt ? "bg-amber-400" : "bg-emerald-400";
+                return (
+                  <div key={bl.category} className="card p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-text-primary text-sm font-medium">{bl.category}</span>
+                      <span className={`text-xs font-mono ${bl.pct >= 100 ? "text-rose-400" : bl.pct >= bl.alertAt ? "text-amber-400" : "text-text-muted"}`}>
+                        {bl.pct.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${clampedPct}%` }} />
+                    </div>
+                    <div className="flex justify-between text-xs text-text-muted mt-1.5">
+                      <span>{formatINR(bl.spent)}</span>
+                      <span>{formatINR(bl.limit)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── Necessary vs Unnecessary ── */}
         <div className="card p-6">
@@ -154,91 +272,67 @@ export default function OverviewPage() {
 
           {hasNecsData ? (
             <>
-              {/* Three mini-tiles */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                 <div className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 size={16} className="text-emerald-400" />
-                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0"><CheckCircle2 size={16} className="text-emerald-400" /></div>
                   <div>
                     <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Necessary</p>
                     <p className="font-mono font-semibold text-emerald-400 text-lg mt-0.5">{formatINR(nb.necessary)}</p>
-                    <p className="text-text-muted text-xs mt-0.5">{necessaryPct.toFixed(0)}% of tagged spend</p>
+                    <p className="text-text-muted text-xs mt-0.5">{necessaryPct.toFixed(0)}% of tagged</p>
                   </div>
                 </div>
-
                 <div className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center flex-shrink-0">
-                    <XCircle size={16} className="text-rose-400" />
-                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center flex-shrink-0"><XCircle size={16} className="text-rose-400" /></div>
                   <div>
                     <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Unnecessary</p>
                     <p className="font-mono font-semibold text-rose-400 text-lg mt-0.5">{formatINR(nb.unnecessary)}</p>
-                    <p className="text-text-muted text-xs mt-0.5">{unnecessaryPct.toFixed(0)}% of tagged spend</p>
+                    <p className="text-text-muted text-xs mt-0.5">{unnecessaryPct.toFixed(0)}% of tagged</p>
                   </div>
                 </div>
-
                 <div className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                    <HelpCircle size={16} className="text-text-muted" />
-                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0"><HelpCircle size={16} className="text-text-muted" /></div>
                   <div>
                     <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Untagged</p>
                     <p className="font-mono font-semibold text-text-secondary text-lg mt-0.5">{formatINR(nb.untagged)}</p>
-                    <p className="text-text-muted text-xs mt-0.5">manual / gmail entries</p>
+                    <p className="text-text-muted text-xs mt-0.5">manual / gmail</p>
                   </div>
                 </div>
               </div>
-
-              {/* Segmented bar */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs text-text-muted">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-                    Necessary {necessaryPct.toFixed(0)}%
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    Unnecessary {unnecessaryPct.toFixed(0)}%
-                    <span className="w-2 h-2 rounded-full bg-rose-400 inline-block" />
-                  </span>
+                  <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />Necessary {necessaryPct.toFixed(0)}%</span>
+                  <span className="flex items-center gap-1.5">Unnecessary {unnecessaryPct.toFixed(0)}%<span className="w-2 h-2 rounded-full bg-rose-400 inline-block" /></span>
                 </div>
                 <div className="h-3 bg-white/5 rounded-full overflow-hidden flex">
                   <div className="h-full bg-emerald-400 transition-all duration-700 rounded-l-full" style={{ width: `${necessaryPct}%` }} />
                   <div className="h-full bg-rose-400  transition-all duration-700"               style={{ width: `${unnecessaryPct}%` }} />
                   <div className="h-full bg-white/5 flex-1 rounded-r-full" />
                 </div>
-                <p className="text-text-muted text-xs text-right">
-                  Total tagged: {formatINR(taggedTotal)} · Total spend: {formatINR(stats.thisMonth.spend)}
-                </p>
+                <p className="text-text-muted text-xs text-right">Tagged: {formatINR(taggedTotal)} · Total spend: {formatINR(stats.thisMonth.spend)}</p>
               </div>
             </>
           ) : (
             <div className="text-center py-8">
-              <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 size={22} className="text-text-muted" />
-              </div>
+              <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-3"><CheckCircle2 size={22} className="text-text-muted" /></div>
               <p className="text-text-secondary text-sm font-medium">No tagged transactions yet</p>
               <p className="text-text-muted text-xs mt-1 max-w-xs mx-auto">
-                Sync your Expenses sheet to populate this chart —{" "}
-                <Link href="/sync" className="text-violet-light hover:underline">go to Sync</Link>.
+                Sync your Expenses sheet — <Link href="/sync" className="text-violet-light hover:underline">go to Sync</Link>.
               </p>
             </div>
           )}
         </div>
 
-        {/* Getting started banner */}
+        {/* Getting started */}
         {!hasAnyData && (
           <div className="card p-6 border-violet/20 bg-violet/5">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-gradient-violet rounded-xl flex items-center justify-center flex-shrink-0">
-                <TrendingUp size={20} className="text-white" />
-              </div>
+              <div className="w-10 h-10 bg-gradient-violet rounded-xl flex items-center justify-center flex-shrink-0"><TrendingUp size={20} className="text-white" /></div>
               <div>
                 <p className="font-display font-semibold text-text-primary">Getting started</p>
                 <p className="text-text-secondary text-sm mt-1 max-w-xl">
-                  Head to <Link href="/spending" className="text-violet-light font-medium hover:underline">Spending</Link> to
-                  add your first transactions, or <Link href="/investing" className="text-violet-light font-medium hover:underline">Investing</Link> to
-                  record your holdings. Your stats will appear here automatically.
+                  Head to <Link href="/spending" className="text-violet-light font-medium hover:underline">Spending</Link> to add your first transactions,
+                  <Link href="/budget" className="text-violet-light font-medium hover:underline ml-1">Budget</Link> to set category limits, or
+                  <Link href="/goals" className="text-violet-light font-medium hover:underline ml-1">Goals</Link> to track your savings.
                 </p>
               </div>
             </div>

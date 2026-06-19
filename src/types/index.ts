@@ -107,3 +107,47 @@ export interface EmiLoan {
   created_at: string;
   updated_at: string;
 }
+
+// Monthly budget cap for a spending category
+export interface BudgetLimit {
+  id: string;
+  category: Category;
+  monthly_limit: number;    // Monthly spending cap in ₹
+  alert_at_pct: number;     // Alert when spending reaches this % of limit (1–100)
+  created_at: string;
+  updated_at: string;
+}
+
+// A financial savings goal
+export interface FinancialGoal {
+  id: string;
+  name: string;             // e.g. "Vacation Fund"
+  target_amount: number;    // e.g. 100000
+  saved_amount: number;     // Current amount saved toward this goal
+  deadline?: string;        // ISO date string, e.g. "2026-12-31"
+  color: string;            // Hex color for the progress ring
+  icon: string;             // Lucide icon name, e.g. "plane", "home", "car"
+  notes?: string;
+  completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+
+// A single EMI loan entry
+export interface EmiLoan {
+  id: string;
+  name: string;             // e.g. "Home Loan - SBI"
+  lender?: string;          // e.g. "SBI", "HDFC"
+  loan_type: LoanType;
+  principal: number;        // Original loan amount
+  interest_rate: number;    // Annual rate, e.g. 8.5 for 8.5%
+  tenure_months: number;    // Total number of EMIs
+  start_date: string;       // ISO date string: "2024-01-01"
+  emi_amount: number;       // Monthly EMI
+  account?: string;         // Bank account debited
+  notes?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
