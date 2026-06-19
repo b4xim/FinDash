@@ -138,9 +138,20 @@ export default function TransactionTable({ transactions, onEdit, onDelete }: Tra
                           <title>Synced from Gmail</title>
                         </Mail>
                       )}
+                      {txn.necessary === "Necessary" && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 flex-shrink-0">
+                          ✓ Necessary
+                        </span>
+                      )}
+                      {txn.necessary === "Unnecessary" && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 flex-shrink-0">
+                          ✗ Unnecessary
+                        </span>
+                      )}
                     </div>
                     {txn.notes && <p className="text-text-muted text-xs mt-0.5">{txn.notes}</p>}
                   </td>
+
                   <td className="table-cell">
                     <span
                       className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full"

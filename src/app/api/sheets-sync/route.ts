@@ -99,13 +99,18 @@ export async function POST(_req: NextRequest) {
     const category   = CATEGORY_MAP[row.category] ?? "Other";
     const description = row.description || row.category || "Expense";
 
-    // Build notes field: combine sheet notes + payment method + necessary flag
+    // Notes: only actual user notes + payment method (not the necessary flag)
     const noteParts = [
       row.notes,
       row.payment_method ? `via ${row.payment_method}` : "",
-      row.necessary === "Unnecessary" ? "⚠️ Unnecessary" : "",
     ].filter(Boolean);
     const notes = noteParts.join(" · ") || undefined;
+
+    // Necessary field stored as its own column
+    const necessary =
+      row.necessary === "Necessary" || row.necessary === "Unnecessary"
+        ? (row.necessary as "Necessary" | "Unnecessary")
+        : undefined;
 
     const record = {
       date:         row.date,
@@ -115,6 +120,7 @@ export async function POST(_req: NextRequest) {
       category:     category,
       account:      row.account || undefined,
       notes:        notes,
+      necessary:    necessary,
       source:       "sheets" as const,
       gmail_msg_id: dedupKey,
     };

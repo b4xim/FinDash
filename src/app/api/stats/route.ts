@@ -33,9 +33,10 @@ export async function GET() {
   const thisMonth = monthRange(0);
   const { data: thisMonthTxns } = await supabase
     .from("transactions")
-    .select("amount, type, category")
+    .select("amount, type, category, necessary")
     .gte("date", thisMonth.start)
     .lte("date", thisMonth.end);
+
 
   // ── Last month's transactions (for % change) ──
   const lastMonth = monthRange(-1);
@@ -103,6 +104,19 @@ export async function GET() {
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value);
 
+  // ── Necessary vs Unnecessary (this month debits only) ──
+  const thisMonthDebits = thisMonthTxns?.filter(t => t.type === "debit") ?? [];
+  const necessarySpend = thisMonthDebits
+    .filter(t => t.necessary === "Necessary")
+    .reduce((s, t) => s + Number(t.amount), 0);
+  const unnecessarySpend = thisMonthDebits
+    .filter(t => t.necessary === "Unnecessary")
+    .reduce((s, t) => s + Number(t.amount), 0);
+  // Transactions without a necessary label (manual/gmail)
+  const untaggedSpend = thisMonthDebits
+    .filter(t => !t.necessary)
+    .reduce((s, t) => s + Number(t.amount), 0);
+
   return NextResponse.json({
     thisMonth: { spend: thisSpend, income: thisIncome },
     lastMonth: { spend: lastSpend, income: lastIncome },
@@ -111,5 +125,6 @@ export async function GET() {
     netWorth,
     categoryBreakdown,
     trendData,
+    necessaryBreakdown: { necessary: necessarySpend, unnecessary: unnecessarySpend, untagged: untaggedSpend },
   });
 }

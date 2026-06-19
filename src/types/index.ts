@@ -27,10 +27,12 @@ export interface Transaction {
   account?: string;       // e.g. "ICICI Credit Card"
   card_last4?: string;    // Last 4 digits, only for card transactions
   notes?: string;
-  source: "manual" | "gmail"; // How it was added
+  necessary?: "Necessary" | "Unnecessary"; // From Sheets or manually set
+  source: "manual" | "gmail" | "sheets";   // How it was added
   gmail_msg_id?: string;
   created_at: string;
 }
+
 
 // A single investment holding
 export interface Holding {
