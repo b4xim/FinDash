@@ -13,7 +13,7 @@ import {
   TrendingUp, TrendingDown, Wallet, PiggyBank,
   ArrowUpRight, ArrowDownRight, Minus,
   CheckCircle2, XCircle, HelpCircle,
-  Zap, Calendar, Trophy, BarChart3, AlertTriangle, Target, UtensilsCrossed, CreditCard as CardIcon
+  Zap, Calendar, Trophy, BarChart3, AlertTriangle, Target, UtensilsCrossed, CreditCard as CardIcon, Loader2
 } from "lucide-react";
 import { formatINR, pctChange } from "@/lib/utils";
 import Link from "next/link";
@@ -129,7 +129,10 @@ export default function OverviewPage() {
       <>
         <Header title="Overview" subtitle="Your financial snapshot" />
         <main className="flex-1 p-6">
-          <div className="card p-12 text-center text-text-muted">Loading your data...</div>
+          <div className="card p-12 flex flex-col items-center justify-center text-center text-text-muted">
+            <Loader2 size={32} className="animate-spin text-violet-light mb-4" />
+            <p className="text-text-secondary font-medium">Loading your data...</p>
+          </div>
         </main>
       </>
     );
