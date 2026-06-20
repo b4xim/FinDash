@@ -56,8 +56,8 @@ export default function SmartPicksPage() {
                   AI Market Screener
                 </h2>
                 <p className="text-text-muted text-sm mt-0.5 max-w-lg">
-                  Screens Nifty 50 stocks by value &amp; momentum, and top mutual funds by returns. 
-                  Gemini AI then generates a buy rationale for each pick.
+                  Screens <strong className="text-text-secondary">Nifty 50</strong>, <strong className="text-text-secondary">Midcap 150</strong> &amp; <strong className="text-text-secondary">Smallcap 250</strong> for the top 3 stocks per segment,
+                  then analyses each for risk &amp; return potential using Gemini AI.
                 </p>
               </div>
             </div>

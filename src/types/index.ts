@@ -156,11 +156,13 @@ export interface EmiLoan {
 
 export type PickSignal = "Strong Buy" | "Buy" | "Watch";
 export type RiskLevel = "Low" | "Medium" | "High";
+export type StockCategory = "nifty50" | "midcap" | "smallcap";
 
 export interface SmartPick {
   name: string;             // e.g. "HDFC Bank"
   ticker: string;           // e.g. "HDFCBANK.NS" or MF scheme code
   assetType: "stock" | "mutual_fund";
+  stockCategory?: StockCategory; // Only set for stocks
   currentPrice: number;
   returnPct: number;        // 1Y return %
   signal: PickSignal;
@@ -171,5 +173,7 @@ export interface SmartPick {
     high52w?: number;       // 52-week high
     low52w?: number;        // 52-week low
     cagr3y?: number;        // 3Y CAGR (mutual funds)
+    volatility?: number;    // Approximate volatility score (distance from 52w high %)
   };
 }
+
