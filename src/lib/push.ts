@@ -6,7 +6,7 @@ const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY!;
 
 if (vapidPublicKey && vapidPrivateKey) {
   webPush.setVapidDetails(
-    "mailto:admin@findash.local",
+    "mailto:basimahmed001@gmail.com",
     vapidPublicKey,
     vapidPrivateKey
   );
@@ -62,7 +62,11 @@ export async function sendPushNotification(payload: PushPayload) {
         await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
       } else {
         console.error("Failed to send push notification", err);
-        pushErrors.push(err.message || "Unknown push error");
+        pushErrors.push({
+          message: err.message || "Unknown push error",
+          statusCode: err.statusCode,
+          body: err.body,
+        });
       }
     }
   });
