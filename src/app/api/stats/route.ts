@@ -32,50 +32,47 @@ export async function GET() {
     return { start, end, label };
   }
 
-  // ── This month's transactions (full fields for insights) ──
+  // ── Fetch all required data concurrently ──
   const thisMonth = monthRange(0);
-  const { data: thisMonthTxns } = await supabase
-    .from("transactions")
-    .select("amount, type, category, necessary, date, description")
-    .gte("date", thisMonth.start)
-    .lte("date", thisMonth.end);
-
-  // ── Last month's transactions (for % change) ──
   const lastMonth = monthRange(-1);
-  const { data: lastMonthTxns } = await supabase
-    .from("transactions")
-    .select("amount, type")
-    .gte("date", lastMonth.start)
-    .lte("date", lastMonth.end);
+  const trendRanges = [5, 4, 3, 2, 1, 0].map(i => monthRange(-i));
+
+  const [
+    thisMonthRes,
+    lastMonthRes,
+    holdingsRes,
+    allTxnsRes,
+    budgetLimitsRes,
+    ...trendResults
+  ] = await Promise.all([
+    supabase.from("transactions").select("amount, type, category, necessary, date, description").gte("date", thisMonth.start).lte("date", thisMonth.end),
+    supabase.from("transactions").select("amount, type").gte("date", lastMonth.start).lte("date", lastMonth.end),
+    supabase.from("holdings").select("units, current_price, buy_price"),
+    supabase.from("transactions").select("amount, type, category"),
+    supabase.from("budget_limits").select("*"),
+    ...trendRanges.map(range => supabase.from("transactions").select("amount, type").gte("date", range.start).lte("date", range.end))
+  ]);
+
+  const thisMonthTxns = thisMonthRes.data;
+  const lastMonthTxns = lastMonthRes.data;
+  const holdings = holdingsRes.data;
+  const allTxns = allTxnsRes.data;
+  const budgetLimits = budgetLimitsRes.data;
 
   // ── Last 6 months for trend chart ──
-  const trendData = [];
-  for (let i = -5; i <= 0; i++) {
-    const range = monthRange(i);
-    const { data: txns } = await supabase
-      .from("transactions")
-      .select("amount, type")
-      .gte("date", range.start)
-      .lte("date", range.end);
-
-    const spend  = txns?.filter(t => t.type === "debit").reduce((s, t) => s + t.amount, 0) ?? 0;
-    const income = txns?.filter(t => t.type === "credit").reduce((s, t) => s + t.amount, 0) ?? 0;
-    trendData.push({ month: range.label, spend, income });
-  }
+  const trendData = trendRanges.map((range, i) => {
+    const txns = trendResults[i].data;
+    const spend  = txns?.filter(t => t.type === "debit").reduce((s, t) => s + Number(t.amount), 0) ?? 0;
+    const income = txns?.filter(t => t.type === "credit").reduce((s, t) => s + Number(t.amount), 0) ?? 0;
+    return { month: range.label, spend, income };
+  });
 
   // ── Holdings total ──
-  const { data: holdings } = await supabase
-    .from("holdings")
-    .select("units, current_price, buy_price");
-  const investmentsTotal    = holdings?.reduce((s, h) => s + h.units * h.current_price, 0) ?? 0;
-  const investmentsInvested = holdings?.reduce((s, h) => s + h.units * h.buy_price, 0) ?? 0;
+  const investmentsTotal    = holdings?.reduce((s, h) => s + Number(h.units) * Number(h.current_price), 0) ?? 0;
+  const investmentsInvested = holdings?.reduce((s, h) => s + Number(h.units) * Number(h.buy_price), 0) ?? 0;
   const investmentsGainLoss = investmentsTotal - investmentsInvested;
 
   // ── All-time cash flow (for net worth + emergency fund) ──
-  const { data: allTxns } = await supabase
-    .from("transactions")
-    .select("amount, type, category");
-
   const allTimeIncome = allTxns
     ?.filter(t => t.type === "credit")
     .reduce((s, t) => s + Number(t.amount), 0) ?? 0;
@@ -119,7 +116,6 @@ export async function GET() {
   const foodSpendThisMonth  = foodTxns.reduce((s, t) => s + Number(t.amount), 0);
   const foodTxnCount        = foodTxns.length;
   const avgDailyFoodSpend   = foodSpendThisMonth / daysElapsed;
-  // Food as % of total spend
   const foodSpendPct        = thisSpend > 0 ? (foodSpendThisMonth / thisSpend) * 100 : 0;
 
   // Biggest single expense this month
@@ -140,7 +136,7 @@ export async function GET() {
   const peakDayIdx  = dayTotals.indexOf(Math.max(...dayTotals));
   const topSpendDay = dayTotals[peakDayIdx] > 0 ? DAY_NAMES[peakDayIdx] : null;
 
-  // Emergency fund months (auto-calc: net cash / avg last-3-month spend)
+  // Emergency fund months
   const last3MonthSpends = trendData.slice(-3).map(d => d.spend).filter(s => s > 0);
   const avgMonthlySpend  = last3MonthSpends.length > 0
     ? last3MonthSpends.reduce((a, b) => a + b, 0) / last3MonthSpends.length
@@ -148,7 +144,6 @@ export async function GET() {
   const emergencyMonths  = avgMonthlySpend > 0 ? netCash / avgMonthlySpend : 0;
 
   // ── Budget alerts ──
-  const { data: budgetLimits } = await supabase.from("budget_limits").select("*");
   const budgetAlerts = (budgetLimits ?? []).map(bl => {
     const spent = categoryMap[bl.category] ?? 0;
     const pct   = bl.monthly_limit > 0 ? (spent / bl.monthly_limit) * 100 : 0;
