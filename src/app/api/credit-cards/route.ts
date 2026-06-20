@@ -16,11 +16,11 @@ export async function GET() {
 
   const supabase = getSupabaseAdmin();
 
-  // Pull all transactions where account looks like a credit card
+  // Pull all transactions where account looks like a credit card OR notes mention credit card
   const { data: transactions, error } = await supabase
     .from("transactions")
     .select("*")
-    .ilike("account", "%card%")
+    .or("account.ilike.%card%,notes.ilike.%credit card%")
     .order("date", { ascending: false });
 
   if (error) {
