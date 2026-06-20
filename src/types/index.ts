@@ -88,22 +88,32 @@ export interface SessionData {
 }
 
 // Loan type for EMI tracker
-export type LoanType = "home" | "car" | "personal" | "education" | "other";
+export type LoanType =
+  | "phone"
+  | "laptop"
+  | "appliance"
+  | "gadget"
+  | "credit_card"
+  | "bike"
+  | "car"
+  | "furniture"
+  | "other";
 
 // A single EMI loan entry
 export interface EmiLoan {
   id: string;
-  name: string;             // e.g. "Home Loan - SBI"
-  lender?: string;          // e.g. "SBI", "HDFC"
+  name: string;             // e.g. "iPhone 15 Pro - Bajaj Finance"
+  lender?: string;          // e.g. "Bajaj Finance", "Amazon Pay Later"
   loan_type: LoanType;
-  principal: number;        // Original loan amount
-  interest_rate: number;    // Annual rate, e.g. 8.5 for 8.5%
+  principal: number;        // Original loan amount / product price
+  interest_rate: number;    // Annual rate — set to 0 for No-Cost EMI
   tenure_months: number;    // Total number of EMIs
   start_date: string;       // ISO date string: "2024-01-01"
   emi_amount: number;       // Monthly EMI
-  account?: string;         // Bank account debited
+  account?: string;         // Card / account used
   notes?: string;
   is_active: boolean;
+  is_no_cost_emi?: boolean; // True = 0% interest / no-cost EMI
   created_at: string;
   updated_at: string;
 }

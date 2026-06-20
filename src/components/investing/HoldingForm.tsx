@@ -10,6 +10,8 @@
 import { useState } from "react";
 import { Holding, MFScheme } from "@/types";
 import MFSearchInput from "./MFSearchInput";
+import TickerSearchInput from "./TickerSearchInput";
+import type { TickerResult } from "@/app/api/ticker-search/route";
 import { Zap } from "lucide-react";
 
 const ASSET_TYPES: { value: Holding["asset_type"]; label: string }[] = [
@@ -19,6 +21,25 @@ const ASSET_TYPES: { value: Holding["asset_type"]; label: string }[] = [
   { value: "fd",          label: "Fixed Deposit" },
   { value: "ppf",         label: "PPF" },
   { value: "other",       label: "Other" },
+];
+
+const ACCOUNT_OPTIONS = [
+  "Zerodha",
+  "Groww",
+  "Angel One",
+  "Upstox",
+  "5paisa",
+  "HDFC Securities",
+  "ICICI Direct",
+  "Kotak Securities",
+  "Motilal Oswal",
+  "Paytm Money",
+  "ET Money",
+  "INDmoney",
+  "SBI Securities",
+  "Axis Direct",
+  "Kuvera",
+  "MFCentral",
 ];
 
 interface FormState {
@@ -63,6 +84,17 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
       ...prev,
       name: scheme.schemeName,
       mfapi_code: String(scheme.schemeCode),
+    }));
+  }
+
+  // When a stock/ETF ticker is selected from Yahoo Finance search,
+  // auto-fill the symbol (ticker) AND the holding name
+  function handleTickerSelect(result: TickerResult) {
+    setForm(prev => ({
+      ...prev,
+      ticker: result.symbol,
+      // Only overwrite name if the user hasn't filled it in yet
+      name: prev.name || result.name,
     }));
   }
 
@@ -139,7 +171,7 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
         </div>
       )}
 
-      {/* Ticker — required for stocks/ETFs, drives Yahoo Finance auto-refresh */}
+      {/* Ticker — live Yahoo Finance autocomplete for stocks/ETFs */}
       {!isMutualFund && (form.asset_type === "stock" || form.asset_type === "etf") && (
         <div>
           <label className="label flex items-center gap-1.5">
@@ -147,16 +179,28 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
             <Zap size={12} className="text-gold" />
             <span className="text-text-muted font-normal text-xs">(auto-syncs price)</span>
           </label>
-          <input
-            type="text"
-            value={form.ticker}
-            onChange={e => set("ticker", e.target.value.toUpperCase())}
-            placeholder="e.g. RELIANCE.NS, HDFCBANK.NS"
-            className="input"
+
+          {/* Live search — type company name to get symbol suggestions */}
+          <TickerSearchInput
+            onSelect={handleTickerSelect}
+            selectedSymbol={form.ticker || undefined}
+            selectedName={form.name || undefined}
+            assetType={form.asset_type as "stock" | "etf"}
           />
-          <p className="text-text-muted text-xs mt-1">
-            Use NSE symbol with .NS suffix — e.g. RELIANCE.NS, HDFCBANK.NS. Leave blank to enter prices manually instead.
-          </p>
+
+          {/* Manual override: still allow typing symbol directly */}
+          <div className="mt-2">
+            <input
+              type="text"
+              value={form.ticker}
+              onChange={e => set("ticker", e.target.value.toUpperCase())}
+              placeholder="Or type symbol directly — e.g. RELIANCE.NS"
+              className="input text-xs font-mono"
+            />
+            <p className="text-text-muted text-xs mt-1">
+              Search above to auto-fill, or type the NSE symbol with .NS suffix manually. Leave blank for manual price entry.
+            </p>
+          </div>
         </div>
       )}
 
@@ -236,13 +280,30 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
       {/* Account */}
       <div>
         <label className="label">Account <span className="text-text-muted">(optional)</span></label>
-        <input
-          type="text"
-          value={form.account}
-          onChange={e => set("account", e.target.value)}
-          placeholder="e.g. Zerodha, Groww, 5paisa"
-          className="input"
-        />
+        <select
+          className="select"
+          value={ACCOUNT_OPTIONS.includes(form.account) ? form.account : (form.account ? "Other" : "")}
+          onChange={e => {
+            if (e.target.value === "Other") set("account", "");
+            else set("account", e.target.value);
+          }}
+        >
+          <option value="">— Select broker / account —</option>
+          {ACCOUNT_OPTIONS.map(a => (
+            <option key={a} value={a}>{a}</option>
+          ))}
+          <option value="Other">Other…</option>
+        </select>
+        {/* Free-text fallback when "Other" or custom value */}
+        {form.account !== "" && !ACCOUNT_OPTIONS.includes(form.account) && (
+          <input
+            type="text"
+            value={form.account}
+            onChange={e => set("account", e.target.value)}
+            placeholder="Type broker / account name"
+            className="input mt-1.5 text-sm"
+          />
+        )}
       </div>
 
       {/* Notes */}

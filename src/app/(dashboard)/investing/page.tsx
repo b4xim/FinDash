@@ -11,6 +11,7 @@ import Header from "@/components/layout/Header";
 import HoldingsTable from "@/components/investing/HoldingsTable";
 import HoldingForm from "@/components/investing/HoldingForm";
 import AllocationPieChart from "@/components/investing/AllocationPieChart";
+import AIPortfolioAnalysis from "@/components/investing/AIPortfolioAnalysis";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { Holding } from "@/types";
@@ -214,6 +215,9 @@ export default function InvestingPage() {
             </p>
           </div>
         </div>
+
+        {/* AI Portfolio Analyser */}
+        <AIPortfolioAnalysis />
 
         {/* Holdings table */}
         {loading ? (

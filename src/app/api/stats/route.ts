@@ -114,6 +114,14 @@ export async function GET() {
   const projectedMonthSpend = avgDailySpend * daysInMonth;
   const savingsRate        = thisIncome > 0 ? ((thisIncome - thisSpend) / thisIncome) * 100 : null;
 
+  // ── Food & Dining specific insights ──
+  const foodTxns            = thisMonthDebits.filter(t => t.category === "Food & Dining");
+  const foodSpendThisMonth  = foodTxns.reduce((s, t) => s + Number(t.amount), 0);
+  const foodTxnCount        = foodTxns.length;
+  const avgDailyFoodSpend   = foodSpendThisMonth / daysElapsed;
+  // Food as % of total spend
+  const foodSpendPct        = thisSpend > 0 ? (foodSpendThisMonth / thisSpend) * 100 : 0;
+
   // Biggest single expense this month
   const biggestExpense = thisMonthDebits.reduce<{ description: string; amount: number; category: string } | null>(
     (max, t) => Number(t.amount) > (max?.amount ?? 0)
@@ -166,5 +174,10 @@ export async function GET() {
     emergencyMonths,
     avgMonthlySpend,
     budgetAlerts,
+    // Food & Dining insights
+    foodSpendThisMonth,
+    avgDailyFoodSpend,
+    foodTxnCount,
+    foodSpendPct,
   });
 }

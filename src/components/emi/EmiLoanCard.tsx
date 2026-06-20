@@ -19,19 +19,27 @@ interface EmiLoanCardProps {
 }
 
 const LOAN_TYPE_LABELS: Record<LoanType, string> = {
-  home:      "Home",
-  car:       "Car",
-  personal:  "Personal",
-  education: "Education",
-  other:     "Other",
+  phone:       "📱 Phone",
+  laptop:      "💻 Laptop",
+  appliance:   "🏠 Appliance",
+  gadget:      "🎧 Gadget",
+  credit_card: "💳 Credit Card",
+  bike:        "🛵 Bike",
+  car:         "🚗 Car",
+  furniture:   "🪑 Furniture",
+  other:       "📋 Other",
 };
 
 const LOAN_TYPE_COLORS: Record<LoanType, string> = {
-  home:      "bg-violet/15 text-violet-light",
-  car:       "bg-amber-500/15 text-amber-400",
-  personal:  "bg-sky-500/15 text-sky-400",
-  education: "bg-emerald-500/15 text-emerald-400",
-  other:     "bg-white/10 text-text-secondary",
+  phone:       "bg-violet/15 text-violet-light",
+  laptop:      "bg-sky-500/15 text-sky-400",
+  appliance:   "bg-amber-500/15 text-amber-400",
+  gadget:      "bg-cyan-500/15 text-cyan-400",
+  credit_card: "bg-rose-500/15 text-rose-400",
+  bike:        "bg-orange-500/15 text-orange-400",
+  car:         "bg-amber-500/15 text-amber-400",
+  furniture:   "bg-emerald-500/15 text-emerald-400",
+  other:       "bg-white/10 text-text-secondary",
 };
 
 /** Compute months elapsed since start_date (capped at tenure) */
@@ -92,6 +100,11 @@ export default function EmiLoanCard({ loan, onEdit, onDelete, onToggleActive }: 
               <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0", LOAN_TYPE_COLORS[loan.loan_type])}>
                 {LOAN_TYPE_LABELS[loan.loan_type]}
               </span>
+              {loan.is_no_cost_emi && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-fin/15 text-emerald-fin flex-shrink-0">
+                  ✦ No-Cost EMI
+                </span>
+              )}
               {!loan.is_active && (
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/5 text-text-muted">Closed</span>
               )}
@@ -138,7 +151,11 @@ export default function EmiLoanCard({ loan, onEdit, onDelete, onToggleActive }: 
         </div>
         <div className="bg-surface-overlay rounded-xl p-3">
           <p className="stat-label text-[10px] mb-1">Interest Rate</p>
-          <p className="font-mono font-semibold text-text-primary text-sm">{loan.interest_rate}% p.a.</p>
+          <p className="font-mono font-semibold text-sm"
+             style={{ color: loan.is_no_cost_emi ? "#10D98C" : undefined }}
+          >
+            {loan.is_no_cost_emi ? "0% (No-Cost)" : `${loan.interest_rate}% p.a.`}
+          </p>
         </div>
         <div className="bg-surface-overlay rounded-xl p-3">
           <p className="stat-label text-[10px] mb-1">Total Interest</p>

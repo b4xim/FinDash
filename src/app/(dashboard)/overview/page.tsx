@@ -13,7 +13,7 @@ import {
   TrendingUp, TrendingDown, Wallet, PiggyBank,
   ArrowUpRight, ArrowDownRight, Minus,
   CheckCircle2, XCircle, HelpCircle,
-  Zap, Calendar, Trophy, BarChart3, AlertTriangle, Target,
+  Zap, Calendar, Trophy, BarChart3, AlertTriangle, Target, UtensilsCrossed,
 } from "lucide-react";
 import { formatINR, pctChange } from "@/lib/utils";
 import Link from "next/link";
@@ -93,6 +93,11 @@ interface StatsResponse {
   topSpendDay:         string | null;
   emergencyMonths:     number;
   budgetAlerts:        BudgetAlert[];
+  // Food & Dining
+  foodSpendThisMonth:  number;
+  avgDailyFoodSpend:   number;
+  foodTxnCount:        number;
+  foodSpendPct:        number;
 }
 
 // ── Page ─────────────────────────────────────────────────────
@@ -220,6 +225,92 @@ export default function OverviewPage() {
             />
           </div>
         </div>
+
+        {/* ── Food & Dining spotlight ── */}
+        {(stats.foodSpendThisMonth > 0 || stats.foodTxnCount > 0) && (
+          <div className="card p-6">
+            <div className="flex items-start justify-between mb-5 gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, #f97316 60%, #ef4444)" }}>
+                  <UtensilsCrossed size={18} className="text-white" />
+                </div>
+                <div>
+                  <p className="font-display font-medium text-text-primary">Food &amp; Dining</p>
+                  <p className="text-text-muted text-sm mt-0.5">Your top spend category this month</p>
+                </div>
+              </div>
+              <span className="text-xs px-3 py-1.5 rounded-full font-mono font-medium"
+                style={{
+                  background: stats.foodSpendPct > 40 ? "rgba(239,68,68,0.12)" : stats.foodSpendPct > 25 ? "rgba(251,191,36,0.12)" : "rgba(16,185,129,0.12)",
+                  color:      stats.foodSpendPct > 40 ? "#f43f5e"               : stats.foodSpendPct > 25 ? "#f59e0b"               : "#10b981",
+                  border:     `1px solid ${stats.foodSpendPct > 40 ? "rgba(239,68,68,0.25)" : stats.foodSpendPct > 25 ? "rgba(251,191,36,0.25)" : "rgba(16,185,129,0.25)"}`,
+                }}
+              >
+                {stats.foodSpendPct.toFixed(1)}% of spend
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+              {/* Avg daily food spend */}
+              <div className="bg-surface-overlay rounded-xl p-4">
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Avg Daily</p>
+                <p className="font-mono font-bold text-2xl mt-1" style={{ color: "#f97316" }}>
+                  {formatINR(stats.avgDailyFoodSpend)}
+                </p>
+                <p className="text-text-muted text-xs mt-1">per day so far this month</p>
+              </div>
+
+              {/* Total this month */}
+              <div className="bg-surface-overlay rounded-xl p-4">
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">This Month</p>
+                <p className="font-mono font-bold text-2xl mt-1 text-text-primary">
+                  {formatINR(stats.foodSpendThisMonth)}
+                </p>
+                <p className="text-text-muted text-xs mt-1">
+                  across {stats.foodTxnCount} transaction{stats.foodTxnCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+
+              {/* Projected end-of-month */}
+              <div className="bg-surface-overlay rounded-xl p-4">
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Projected</p>
+                <p className="font-mono font-bold text-2xl mt-1 text-text-primary">
+                  {formatINR(stats.avgDailyFoodSpend * new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate())}
+                </p>
+                <p className="text-text-muted text-xs mt-1">by end of month</p>
+              </div>
+            </div>
+
+            {/* Share-of-spend bar */}
+            <div>
+              <div className="flex justify-between text-xs text-text-muted mb-1.5">
+                <span>Food &amp; Dining share of total spend</span>
+                <span className="font-mono">{stats.foodSpendPct.toFixed(1)}%</span>
+              </div>
+              <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${Math.min(stats.foodSpendPct, 100)}%`,
+                    background: stats.foodSpendPct > 40
+                      ? "linear-gradient(90deg,#f97316,#ef4444)"
+                      : stats.foodSpendPct > 25
+                      ? "linear-gradient(90deg,#f97316,#f59e0b)"
+                      : "linear-gradient(90deg,#f97316,#10b981)",
+                  }}
+                />
+              </div>
+              <p className="text-text-muted text-xs mt-2 text-right">
+                {stats.foodSpendPct > 40
+                  ? "⚠️ High food share — consider meal prepping to cut costs"
+                  : stats.foodSpendPct > 25
+                  ? "💡 Moderate — you're spending a notable chunk on food"
+                  : "✅ Well-balanced food spend"}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ── Budget progress (if limits set) ── */}
         {stats.budgetAlerts && stats.budgetAlerts.length > 0 && (
