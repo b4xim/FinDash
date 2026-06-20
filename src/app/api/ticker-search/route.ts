@@ -51,12 +51,12 @@ export async function GET(req: NextRequest) {
       quotesCount: 20,
     });
 
-    const quotes = result.quotes ?? [];
+    const quotes: any[] = result.quotes ?? [];
 
     // Filter to NSE/BSE equity & ETF results only — exclude US, mutual funds, etc.
     const filtered: TickerResult[] = quotes
       .filter(q =>
-        q.symbol &&
+        typeof q.symbol === "string" &&
         (q.symbol.endsWith(".NS") || q.symbol.endsWith(".BO")) &&
         (q.quoteType === "EQUITY" || q.quoteType === "ETF")
       )
