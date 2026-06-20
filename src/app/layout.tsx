@@ -25,8 +25,8 @@ export const metadata: Metadata = {
   title: "FinDash — Personal Finance",
   description: "Private personal finance dashboard",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/logo.png",
+    shortcut: "/logo.png",
     apple: "/apple-touch-icon.png",
   },
   appleWebApp: {
