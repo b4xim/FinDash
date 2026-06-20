@@ -12,15 +12,15 @@
     --color-white: 0 0 0; /* Inverted for opacities (white/5 -> black overlay) */
     --color-black: 255 255 255; /* Inverted for opacities (black/50 -> white overlay) */
     
-    --color-navy-950: 253 251 251;
-    --color-navy-900: 245 240 240;
-    --color-navy-800: 232 224 224;
+    --color-navy-950: 247 243 243;
+    --color-navy-900: 240 235 235;
+    --color-navy-800: 228 220 220;
     --color-navy-700: 199 184 184;
     --color-navy-600: 153 138 138;
     
-    --color-surface: 253 251 251;
-    --color-surface-raised: 250 246 246;
-    --color-surface-overlay: 250 246 246;
+    --color-surface: 247 243 243;
+    --color-surface-raised: 255 255 255;
+    --color-surface-overlay: 255 255 255;
     
     --color-text-primary: 38 28 28;
     --color-text-secondary: 89 74 74;
