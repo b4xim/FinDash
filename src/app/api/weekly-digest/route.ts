@@ -29,16 +29,27 @@ async function getAIInsight(
   weekIncome: number,
   savingsRate: number | null,
   topCategory: string | undefined,
+  foodSpendPct: number,
+  portfolioGainLoss: number,
+  totalMonthlyEmi: number,
 ): Promise<string | undefined> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return undefined;
 
-  const srText = savingsRate !== null ? `${savingsRate.toFixed(1)}% savings rate` : "unknown savings rate";
-  const catText = topCategory ? `highest spending in ${topCategory}` : "spending across various categories";
+  const srText   = savingsRate !== null ? `${savingsRate.toFixed(1)}% savings rate` : "unknown savings rate";
+  const catText  = topCategory ? `highest spending in ${topCategory}` : "spending across various categories";
+  const foodText = foodSpendPct > 0 ? `food & dining is ${foodSpendPct.toFixed(1)}% of monthly spend` : "";
+  const pfText   = portfolioGainLoss !== 0
+    ? `portfolio is ${portfolioGainLoss >= 0 ? "up" : "down"} ₹${Math.abs(portfolioGainLoss).toFixed(0)} overall`
+    : "";
+  const emiText  = totalMonthlyEmi > 0 ? `monthly EMI commitments of ₹${totalMonthlyEmi.toFixed(0)}` : "";
+
+  const contextParts = [srText, catText, foodText, pfText, emiText].filter(Boolean).join(", ");
 
   const prompt = `You are a friendly, encouraging personal finance advisor for an Indian user.
-Based on this week's data: spent ₹${weekSpend.toFixed(0)}, earned ₹${weekIncome.toFixed(0)}, ${srText}, ${catText}.
-Write exactly 2 sentences of personalised financial insight or encouragement. Be specific, warm, and actionable.
+Based on this week's data: spent ₹${weekSpend.toFixed(0)}, earned ₹${weekIncome.toFixed(0)}, ${contextParts}.
+Write exactly 2–3 sentences of personalised, specific financial insight. Reference the actual numbers.
+Mention food spend if it is above 25%. Reference portfolio if gains/losses are significant. Be warm and actionable.
 Do not use bullet points, headers, or markdown. Just plain text.`;
 
   try {
@@ -49,7 +60,7 @@ Do not use bullet points, headers, or markdown. Just plain text.`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.8, maxOutputTokens: 150 },
+          generationConfig: { temperature: 0.8, maxOutputTokens: 200 },
         }),
       }
     );
@@ -105,6 +116,9 @@ export async function GET(req: NextRequest) {
       data.weekIncome,
       data.savingsRate,
       data.weekTopCategories[0]?.name,
+      data.foodSpendPct,
+      data.investmentsGainLoss,
+      data.totalMonthlyEmi,
     );
 
     // 3. Render the HTML email

@@ -3,25 +3,38 @@
 // Generates a fully self-contained dark-themed HTML email for
 // the weekly FinDash summary. Uses inline CSS only (required
 // for broad email client support — Gmail, Apple Mail, Outlook).
+//
+// Sections:
+//   1. This Week at a Glance
+//   2. Top Spending Categories
+//   3. Food & Dining Spotlight  ← NEW
+//   4. Biggest Expenses This Week
+//   5. Month-to-Date & Portfolio
+//   6. Portfolio Movers (Top Gainers / Losers)  ← NEW
+//   7. EMI Tracker Summary  ← NEW
+//   8. Budget Watch
+//   9. AI Weekly Insight
 // ============================================================
 
 import type { WeeklyDigestData } from "@/lib/weeklyDigestData";
 
 // ── Colour tokens (matching app theme: charcoal dark + crimson red) ──
 const C = {
-  navy:       "#0A0A0A",   // navy-950
-  navyCard:   "#111111",   // navy-900
-  navyBorder: "#2A2A2A",   // navy-600
-  crimson:    "#E8253A",   // violet DEFAULT (crimson red primary)
-  crimsonLight:"#FF3D52",  // violet-light
-  crimsonDark: "#C41E31",  // violet-dark
-  emerald:    "#10D98C",   // emerald-fin (positive/income)
-  gold:       "#FF6B6B",   // gold DEFAULT (warm red-orange)
-  rose:       "#FF5C7A",   // rose-fin (negative/spend)
-  textPrimary:"#F5F5F5",   // text-primary
-  textSecond: "#A0A0A0",   // text-secondary
-  textMuted:  "#555555",   // text-muted
-  white:      "#FFFFFF",
+  navy:        "#0A0A0A",
+  navyCard:    "#111111",
+  navyBorder:  "#2A2A2A",
+  crimson:     "#E8253A",
+  crimsonLight:"#FF3D52",
+  emerald:     "#10D98C",
+  gold:        "#FF6B6B",
+  rose:        "#FF5C7A",
+  amber:       "#F59E0B",
+  orange:      "#F97316",
+  sky:         "#38BDF8",
+  textPrimary: "#F5F5F5",
+  textSecond:  "#A0A0A0",
+  textMuted:   "#555555",
+  white:       "#FFFFFF",
 };
 
 function formatINR(n: number) {
@@ -36,6 +49,22 @@ function pctColor(pct: number): string {
   if (pct >= 100) return C.rose;
   if (pct >= 70)  return C.gold;
   return C.emerald;
+}
+
+// ── Shared: section heading ───────────────────────────────────
+function sectionHeading(emoji: string, title: string): string {
+  return `<div style="font-size: 11px; color: ${C.textMuted}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px;">${emoji} ${title}</div>`;
+}
+
+// ── Shared: card wrapper ──────────────────────────────────────
+function card(content: string): string {
+  return `
+    <tr>
+      <td style="padding: 20px; background: ${C.navyCard}; border: 1px solid ${C.navyBorder}; border-radius: 12px;">
+        ${content}
+      </td>
+    </tr>
+    <tr><td style="height: 16px;"></td></tr>`;
 }
 
 // ── Mini inline bar for category breakdown ────────────────────
@@ -67,6 +96,16 @@ function statBox(label: string, value: string, sub: string, color: string = C.te
     </td>`;
 }
 
+// ── Row: key/value table row ──────────────────────────────────
+function kvRow(label: string, value: string, valueColor: string = C.textPrimary, isLast = false): string {
+  const border = isLast ? "" : `border-bottom: 1px solid ${C.navyBorder};`;
+  return `
+    <tr>
+      <td style="padding: 8px 0; font-size: 13px; color: ${C.textSecond}; ${border}">${label}</td>
+      <td style="padding: 8px 0; text-align: right; font-size: 13px; color: ${valueColor}; ${border} font-weight: 600;">${value}</td>
+    </tr>`;
+}
+
 // ── Main template ─────────────────────────────────────────────
 export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: string): string {
   const {
@@ -74,7 +113,10 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
     weekSpend, weekIncome, weekSavings,
     weekTopCategories, monthSpend, monthIncome,
     savingsRate, investmentsTotal, investmentsGainLoss,
+    topGainers, topLosers,
     netWorth, budgetAlerts, topTransactions,
+    foodSpendThisMonth, avgDailyFoodSpend, foodTxnCount, foodSpendPct,
+    activeEmiCount, totalMonthlyEmi, noCostEmiCount,
   } = data;
 
   const savingsColor = weekSavings >= 0 ? C.emerald : C.rose;
@@ -82,7 +124,7 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
   const gainPrefix   = investmentsGainLoss >= 0 ? "+" : "";
   const maxCatAmt    = weekTopCategories[0]?.amount ?? 1;
 
-  // Budget alert rows
+  // ── Budget alert rows ────────────────────────────────────────
   const alertRows = budgetAlerts.length > 0
     ? budgetAlerts.map(a => `
         <tr>
@@ -92,7 +134,7 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
         </tr>`).join("")
     : `<tr><td colspan="3" style="padding: 16px; text-align: center; color: ${C.textMuted}; font-size: 13px;">✅ All budgets on track this week</td></tr>`;
 
-  // Top transactions rows
+  // ── Top transactions rows ────────────────────────────────────
   const txnRows = topTransactions.length > 0
     ? topTransactions.map(t => `
         <tr>
@@ -102,15 +144,43 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
         </tr>`).join("")
     : `<tr><td colspan="3" style="padding: 16px; text-align: center; color: ${C.textMuted}; font-size: 13px;">No transactions this week</td></tr>`;
 
+  // ── Food bar ─────────────────────────────────────────────────
+  const foodBarPct   = Math.min(foodSpendPct, 100);
+  const foodBarColor = foodSpendPct > 40
+    ? `linear-gradient(90deg, ${C.orange}, ${C.rose})`
+    : foodSpendPct > 25
+    ? `linear-gradient(90deg, ${C.orange}, ${C.amber})`
+    : `linear-gradient(90deg, ${C.orange}, ${C.emerald})`;
+  const foodLabel = foodSpendPct > 40
+    ? "⚠️ High food share — consider meal prepping"
+    : foodSpendPct > 25
+    ? "💡 Moderate — a notable chunk on food"
+    : "✅ Well-balanced food spend";
+  const foodBadgeColor = foodSpendPct > 40 ? C.rose : foodSpendPct > 25 ? C.amber : C.emerald;
+
+  // ── Portfolio movers rows ─────────────────────────────────────
+  const moverRows = (items: typeof topGainers, isGainer: boolean) =>
+    items.map(h => {
+      const color = isGainer ? C.emerald : C.rose;
+      const prefix = isGainer ? "+" : "";
+      return `
+        <tr>
+          <td style="padding: 7px 0; font-size: 12px; color: ${C.textPrimary}; border-bottom: 1px solid ${C.navyBorder}; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${h.name}</td>
+          <td style="padding: 7px 0; text-align: right; font-size: 12px; color: ${color}; border-bottom: 1px solid ${C.navyBorder}; font-weight: 700;">${prefix}${h.gainLossPct.toFixed(1)}%</td>
+          <td style="padding: 7px 0; text-align: right; font-size: 12px; color: ${C.textSecond}; border-bottom: 1px solid ${C.navyBorder};">${formatINR(h.currentValue)}</td>
+        </tr>`;
+    }).join("");
+
+  const hasMovers = topGainers.length > 0 || topLosers.length > 0;
+
+  // ── AI Insight section ────────────────────────────────────────
   const aiSection = aiInsight ? `
     <!-- AI Insight -->
-    <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 24px;">
-      <tr>
-        <td style="padding: 20px; background: linear-gradient(135deg, rgba(232,37,58,0.12), rgba(16,217,140,0.06)); border: 1px solid rgba(232,37,58,0.22); border-radius: 12px;">
-          <div style="font-size: 11px; color: ${C.crimsonLight}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-weight: 600;">✨ AI Weekly Insight</div>
-          <div style="font-size: 14px; color: ${C.textPrimary}; line-height: 1.7;">${aiInsight}</div>
-        </td>
-      </tr>
+    <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 0;">
+      ${card(`
+        ${sectionHeading("✨", "AI Weekly Insight")}
+        <div style="font-size: 14px; color: ${C.textPrimary}; line-height: 1.8;">${aiInsight}</div>
+      `)}
     </table>` : "";
 
   return `<!DOCTYPE html>
@@ -124,7 +194,7 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
 
   <!-- Preheader (hidden preview text) -->
   <div style="display: none; font-size: 1px; max-height: 0; overflow: hidden; color: #0A0A0A;">
-    Your FinDash weekly summary for ${weekLabel} — Spent ${formatINR(weekSpend)}, Saved ${formatINR(weekSavings)} ✨
+    FinDash ${weekLabel} — Spent ${formatINR(weekSpend)}, Food ${formatINR(foodSpendThisMonth)}, Portfolio ${gainPrefix}${formatINR(investmentsGainLoss)} ✨
   </div>
 
   <!-- Outer wrapper -->
@@ -138,7 +208,6 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
           <!-- ── HEADER ─────────────────────────────────────── -->
           <tr>
             <td style="padding: 0 0 24px 0; text-align: center;">
-              <!-- Logo wordmark -->
               <div style="display: inline-block; margin-bottom: 16px;">
                 <span style="font-size: 26px; font-weight: 800; background: linear-gradient(135deg, #E8253A, #FF6B6B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">FinDash</span>
               </div>
@@ -148,47 +217,82 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
             </td>
           </tr>
 
-          <!-- Divider line with gradient -->
+          <!-- Gradient divider -->
           <tr>
             <td style="padding: 0 0 28px 0;">
               <div style="height: 1px; background: linear-gradient(90deg, transparent, ${C.crimson}, transparent);"></div>
             </td>
           </tr>
 
-          <!-- ── THIS WEEK AT A GLANCE ───────────────────────── -->
+          <!-- ── 1. THIS WEEK AT A GLANCE ───────────────────── -->
           <tr>
             <td style="padding: 0 0 8px 0;">
               <div style="font-size: 11px; color: ${C.textMuted}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;">📊 This Week at a Glance</div>
               <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: separate; border-spacing: 8px;">
                 <tr>
-                  ${statBox("Total Spent", formatINR(weekSpend), `${weekLabel.split("–")[0].trim()} to now`, C.rose)}
+                  ${statBox("Total Spent",  formatINR(weekSpend),              `${weekLabel.split("–")[0].trim()} to now`, C.rose)}
                   <td style="width: 8px;"></td>
-                  ${statBox("Total Income", formatINR(weekIncome), "Received this week", C.emerald)}
+                  ${statBox("Total Income", formatINR(weekIncome),             "Received this week", C.emerald)}
                   <td style="width: 8px;"></td>
-                  ${statBox("Net Savings", formatINR(Math.abs(weekSavings)), weekSavings >= 0 ? "Saved this week 🎉" : "Deficit this week", savingsColor)}
+                  ${statBox("Net Savings",  formatINR(Math.abs(weekSavings)),  weekSavings >= 0 ? "Saved this week 🎉" : "Deficit this week", savingsColor)}
                 </tr>
               </table>
             </td>
           </tr>
-
           <tr><td style="height: 24px;"></td></tr>
 
-          <!-- ── SPENDING BY CATEGORY ────────────────────────── -->
+          <!-- ── 2. SPENDING BY CATEGORY ────────────────────── -->
           ${weekTopCategories.length > 0 ? `
-          <tr>
-            <td style="padding: 20px; background: ${C.navyCard}; border: 1px solid ${C.navyBorder}; border-radius: 12px; margin-bottom: 20px;">
-              <div style="font-size: 11px; color: ${C.textMuted}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px;">🗂 Top Spending Categories</div>
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+            ${card(`
+              ${sectionHeading("🗂", "Top Spending Categories")}
               <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                 ${weekTopCategories.map(c => categoryBar(c.name, c.amount, maxCatAmt)).join("")}
               </table>
-            </td>
-          </tr>
-          <tr><td style="height: 16px;"></td></tr>` : ""}
+            `)}
+          </table>` : ""}
 
-          <!-- ── TOP TRANSACTIONS ────────────────────────────── -->
-          <tr>
-            <td style="padding: 20px; background: ${C.navyCard}; border: 1px solid ${C.navyBorder}; border-radius: 12px;">
-              <div style="font-size: 11px; color: ${C.textMuted}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px;">💳 Biggest Expenses This Week</div>
+          <!-- ── 3. FOOD & DINING SPOTLIGHT ─────────────────── -->
+          ${foodSpendThisMonth > 0 ? `
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+            ${card(`
+              ${sectionHeading("🍽️", "Food &amp; Dining Spotlight")}
+
+              <!-- 3 mini stat boxes -->
+              <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: separate; border-spacing: 6px; margin-bottom: 16px;">
+                <tr>
+                  <td style="width: 33%; padding: 12px; background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.2); border-radius: 8px; text-align: center;">
+                    <div style="font-size: 10px; color: ${C.textMuted}; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Avg Daily</div>
+                    <div style="font-size: 18px; font-weight: 700; color: ${C.orange};">${formatINR(avgDailyFoodSpend)}</div>
+                    <div style="font-size: 10px; color: ${C.textSecond};">per day this month</div>
+                  </td>
+                  <td style="width: 6px;"></td>
+                  <td style="width: 33%; padding: 12px; background: ${C.navyCard}; border: 1px solid ${C.navyBorder}; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 10px; color: ${C.textMuted}; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">This Month</div>
+                    <div style="font-size: 18px; font-weight: 700; color: ${C.textPrimary};">${formatINR(foodSpendThisMonth)}</div>
+                    <div style="font-size: 10px; color: ${C.textSecond};">${foodTxnCount} transaction${foodTxnCount !== 1 ? "s" : ""}</div>
+                  </td>
+                  <td style="width: 6px;"></td>
+                  <td style="width: 33%; padding: 12px; background: ${C.navyCard}; border: 1px solid ${C.navyBorder}; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 10px; color: ${C.textMuted}; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">% of Spend</div>
+                    <div style="font-size: 18px; font-weight: 700; color: ${foodBadgeColor};">${foodSpendPct.toFixed(1)}%</div>
+                    <div style="font-size: 10px; color: ${C.textSecond};">of total spend</div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Share bar -->
+              <div style="background: rgba(255,255,255,0.04); border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 8px;">
+                <div style="background: ${foodBarColor}; border-radius: 4px; height: 8px; width: ${foodBarPct}%;"></div>
+              </div>
+              <div style="font-size: 11px; color: ${C.textSecond}; text-align: right;">${foodLabel}</div>
+            `)}
+          </table>` : ""}
+
+          <!-- ── 4. BIGGEST EXPENSES THIS WEEK ──────────────── -->
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+            ${card(`
+              ${sectionHeading("💳", "Biggest Expenses This Week")}
               <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                 <tr>
                   <th style="text-align: left; font-size: 10px; color: ${C.textMuted}; padding-bottom: 8px; font-weight: 500;">Description</th>
@@ -197,51 +301,82 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
                 </tr>
                 ${txnRows}
               </table>
-            </td>
-          </tr>
+            `)}
+          </table>
 
-          <tr><td style="height: 16px;"></td></tr>
-
-          <!-- ── MONTH-TO-DATE & PORTFOLIO ──────────────────── -->
-          <tr>
-            <td style="padding: 20px; background: ${C.navyCard}; border: 1px solid ${C.navyBorder}; border-radius: 12px;">
-              <div style="font-size: 11px; color: ${C.textMuted}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px;">📅 Month-to-Date · ${monthLabel}</div>
+          <!-- ── 5. MONTH-TO-DATE & PORTFOLIO ───────────────── -->
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+            ${card(`
+              ${sectionHeading("📅", `Month-to-Date · ${monthLabel}`)}
               <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-                <tr>
-                  <td style="padding: 8px 0; font-size: 13px; color: ${C.textSecond}; border-bottom: 1px solid ${C.navyBorder};">Total Spend</td>
-                  <td style="padding: 8px 0; text-align: right; font-size: 13px; color: ${C.rose}; border-bottom: 1px solid ${C.navyBorder}; font-weight: 600;">${formatINR(monthSpend)}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-size: 13px; color: ${C.textSecond}; border-bottom: 1px solid ${C.navyBorder};">Total Income</td>
-                  <td style="padding: 8px 0; text-align: right; font-size: 13px; color: ${C.emerald}; border-bottom: 1px solid ${C.navyBorder}; font-weight: 600;">${formatINR(monthIncome)}</td>
-                </tr>
-                ${savingsRate !== null ? `
-                <tr>
-                  <td style="padding: 8px 0; font-size: 13px; color: ${C.textSecond}; border-bottom: 1px solid ${C.navyBorder};">Savings Rate</td>
-                  <td style="padding: 8px 0; text-align: right; font-size: 13px; color: ${savingsRate >= 20 ? C.emerald : savingsRate >= 10 ? C.gold : C.rose}; border-bottom: 1px solid ${C.navyBorder}; font-weight: 600;">${savingsRate.toFixed(1)}%</td>
-                </tr>` : ""}
-                <tr>
-                  <td style="padding: 8px 0; font-size: 13px; color: ${C.textSecond}; border-bottom: 1px solid ${C.navyBorder};">Portfolio Value</td>
-                  <td style="padding: 8px 0; text-align: right; font-size: 13px; color: ${C.textPrimary}; border-bottom: 1px solid ${C.navyBorder}; font-weight: 600;">${formatINR(investmentsTotal)}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-size: 13px; color: ${C.textSecond}; border-bottom: 1px solid ${C.navyBorder};">Portfolio Gain/Loss</td>
-                  <td style="padding: 8px 0; text-align: right; font-size: 13px; color: ${gainColor}; border-bottom: 1px solid ${C.navyBorder}; font-weight: 600;">${gainPrefix}${formatINR(investmentsGainLoss)}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-size: 14px; color: ${C.textPrimary}; font-weight: 600;">Net Worth</td>
-                  <td style="padding: 8px 0; text-align: right; font-size: 14px; color: ${C.crimsonLight}; font-weight: 700;">${formatINR(netWorth)}</td>
-                </tr>
+                ${kvRow("Total Spend",       formatINR(monthSpend),  C.rose)}
+                ${kvRow("Total Income",      formatINR(monthIncome), C.emerald)}
+                ${savingsRate !== null ? kvRow("Savings Rate", `${savingsRate.toFixed(1)}%`, savingsRate >= 20 ? C.emerald : savingsRate >= 10 ? C.gold : C.rose) : ""}
+                ${kvRow("Portfolio Value",   formatINR(investmentsTotal))}
+                ${kvRow("Portfolio Gain/Loss", `${gainPrefix}${formatINR(investmentsGainLoss)}`, gainColor)}
+                ${kvRow("Net Worth",         formatINR(netWorth), C.crimsonLight, true)}
               </table>
-            </td>
-          </tr>
+            `)}
+          </table>
 
-          <tr><td style="height: 16px;"></td></tr>
+          <!-- ── 6. PORTFOLIO MOVERS ────────────────────────── -->
+          ${hasMovers ? `
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+            ${card(`
+              ${sectionHeading("📈", "Portfolio Movers")}
+              <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
 
-          <!-- ── BUDGET ALERTS ───────────────────────────────── -->
-          <tr>
-            <td style="padding: 20px; background: ${C.navyCard}; border: 1px solid ${C.navyBorder}; border-radius: 12px;">
-              <div style="font-size: 11px; color: ${C.textMuted}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px;">🚨 Budget Watch</div>
+                ${topGainers.length > 0 ? `
+                <!-- Gainers header -->
+                <tr>
+                  <td colspan="3" style="padding: 4px 0 6px 0;">
+                    <span style="font-size: 11px; font-weight: 600; color: ${C.emerald}; text-transform: uppercase; letter-spacing: 1px;">▲ Top Gainers</span>
+                  </td>
+                </tr>
+                <tr>
+                  <th style="text-align: left; font-size: 10px; color: ${C.textMuted}; padding-bottom: 6px; font-weight: 400;">Holding</th>
+                  <th style="text-align: right; font-size: 10px; color: ${C.textMuted}; padding-bottom: 6px; font-weight: 400;">Return</th>
+                  <th style="text-align: right; font-size: 10px; color: ${C.textMuted}; padding-bottom: 6px; font-weight: 400;">Value</th>
+                </tr>
+                ${moverRows(topGainers, true)}` : ""}
+
+                ${topLosers.length > 0 ? `
+                <!-- Spacer between gainers and losers -->
+                ${topGainers.length > 0 ? `<tr><td colspan="3" style="height: 12px;"></td></tr>` : ""}
+                <!-- Losers header -->
+                <tr>
+                  <td colspan="3" style="padding: 4px 0 6px 0;">
+                    <span style="font-size: 11px; font-weight: 600; color: ${C.rose}; text-transform: uppercase; letter-spacing: 1px;">▼ Under Pressure</span>
+                  </td>
+                </tr>
+                <tr>
+                  <th style="text-align: left; font-size: 10px; color: ${C.textMuted}; padding-bottom: 6px; font-weight: 400;">Holding</th>
+                  <th style="text-align: right; font-size: 10px; color: ${C.textMuted}; padding-bottom: 6px; font-weight: 400;">Return</th>
+                  <th style="text-align: right; font-size: 10px; color: ${C.textMuted}; padding-bottom: 6px; font-weight: 400;">Value</th>
+                </tr>
+                ${moverRows(topLosers, false)}` : ""}
+
+              </table>
+            `)}
+          </table>` : ""}
+
+          <!-- ── 7. EMI TRACKER SUMMARY ─────────────────────── -->
+          ${activeEmiCount > 0 ? `
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+            ${card(`
+              ${sectionHeading("📱", "EMI Tracker")}
+              <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                ${kvRow("Active EMIs",        `${activeEmiCount} EMI${activeEmiCount !== 1 ? "s" : ""}`)}
+                ${kvRow("Monthly Outflow",    formatINR(totalMonthlyEmi), C.rose)}
+                ${noCostEmiCount > 0 ? kvRow("No-Cost EMIs", `${noCostEmiCount} (0% interest ✓)`, C.emerald, true) : kvRow("Interest-Free", "None active", C.textMuted, true)}
+              </table>
+            `)}
+          </table>` : ""}
+
+          <!-- ── 8. BUDGET ALERTS ───────────────────────────── -->
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+            ${card(`
+              ${sectionHeading("🚨", "Budget Watch")}
               <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                 <tr>
                   <th style="text-align: left; font-size: 10px; color: ${C.textMuted}; padding-bottom: 8px; font-weight: 500;">Category</th>
@@ -250,12 +385,10 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
                 </tr>
                 ${alertRows}
               </table>
-            </td>
-          </tr>
+            `)}
+          </table>
 
-          <tr><td style="height: 16px;"></td></tr>
-
-          <!-- ── AI INSIGHT ──────────────────────────────────── -->
+          <!-- ── 9. AI INSIGHT ──────────────────────────────── -->
           ${aiSection}
 
           <!-- ── CTA BUTTON ──────────────────────────────────── -->
