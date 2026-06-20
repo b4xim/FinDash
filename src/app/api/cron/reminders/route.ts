@@ -8,14 +8,14 @@ export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
   const providedSecret = authHeader?.replace("Bearer ", "").trim();
-  
+
   if (cronSecret && providedSecret !== cronSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const result = await sendPushNotification({
-      title: "FinDash Reminder 📝",
+      title: "Reminder 📝",
       body: "Don't forget to add your transactions for today!",
       url: "/spending",
     });
