@@ -35,7 +35,7 @@ function StatCard({
           {sub && <p className="text-text-muted text-xs mt-0.5">{sub}</p>}
         </div>
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${accent}`}>
-          <Icon size={20} className="text-white" />
+          <Icon size={20} className="text-[#FFFFFF]" />
         </div>
       </div>
       {change !== null && change !== undefined && (
@@ -60,7 +60,7 @@ function InsightTile({ icon: Icon, iconClass, label, value, sub }: {
   return (
     <div className="card p-5 flex items-start gap-3">
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${iconClass}`}>
-        <Icon size={17} className="text-white" />
+        <Icon size={17} className="text-[#FFFFFF]" />
       </div>
       <div className="min-w-0">
         <p className="text-text-muted text-xs font-medium uppercase tracking-wider">{label}</p>
@@ -274,7 +274,7 @@ export default function OverviewPage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg, #f97316 60%, #ef4444)" }}>
-                  <UtensilsCrossed size={18} className="text-white" />
+                  <UtensilsCrossed size={18} className="text-[#FFFFFF]" />
                 </div>
                 <div>
                   <p className="font-display font-medium text-text-primary">Food &amp; Dining</p>
@@ -458,7 +458,7 @@ export default function OverviewPage() {
         {!hasAnyData && (
           <div className="card p-6 border-violet/20 bg-violet/5">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-gradient-violet rounded-xl flex items-center justify-center flex-shrink-0"><TrendingUp size={20} className="text-white" /></div>
+              <div className="w-10 h-10 bg-gradient-violet rounded-xl flex items-center justify-center flex-shrink-0"><TrendingUp size={20} className="text-[#FFFFFF]" /></div>
               <div>
                 <p className="font-display font-semibold text-text-primary">Getting started</p>
                 <p className="text-text-secondary text-sm mt-1 max-w-xl">

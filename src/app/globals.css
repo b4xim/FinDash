@@ -13,14 +13,14 @@
     --color-black: 255 255 255; /* Inverted for opacities (black/50 -> white overlay) */
     
     --color-navy-950: 248 250 252;
-    --color-navy-900: 241 245 249;
-    --color-navy-800: 226 232 240;
-    --color-navy-700: 203 213 225;
-    --color-navy-600: 148 163 184;
+    --color-navy-900: 226 232 240;
+    --color-navy-800: 203 213 225;
+    --color-navy-700: 148 163 184;
+    --color-navy-600: 100 116 139;
     
-    --color-surface: 241 245 249;
-    --color-surface-raised: 255 255 255;
-    --color-surface-overlay: 255 255 255;
+    --color-surface: 248 250 252;
+    --color-surface-raised: 241 245 249;
+    --color-surface-overlay: 241 245 249;
     
     --color-text-primary: 15 23 42;
     --color-text-secondary: 71 85 105;
@@ -92,7 +92,7 @@
 
   /* ── Buttons ── */
   .btn-primary {
-    @apply bg-gradient-violet text-white font-display font-medium px-5 py-2.5 rounded-xl
+    @apply bg-gradient-violet text-[#FFFFFF] font-display font-medium px-5 py-2.5 rounded-xl
            transition-all duration-200 hover:opacity-90 hover:shadow-violet-glow
            active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }

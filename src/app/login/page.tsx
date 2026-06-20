@@ -50,7 +50,7 @@ export default function LoginPage() {
         {/* Logo + brand */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-violet rounded-2xl shadow-violet-glow mb-4">
-            <TrendingUp size={28} className="text-white" />
+            <TrendingUp size={28} className="text-[#FFFFFF]" />
           </div>
           <h1 className="text-3xl font-display font-semibold text-text-primary tracking-tight">
             FinDash

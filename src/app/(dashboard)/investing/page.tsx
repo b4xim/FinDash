@@ -138,7 +138,7 @@ export default function InvestingPage() {
                 <p className="stat-value mt-1">{formatINR(totalCurrentValue, true)}</p>
               </div>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-violet">
-                <Wallet size={20} className="text-white" />
+                <Wallet size={20} className="text-[#FFFFFF]" />
               </div>
             </div>
           </div>

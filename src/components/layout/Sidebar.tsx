@@ -43,7 +43,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
       <div className="px-6 py-6 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gradient-violet rounded-xl flex items-center justify-center shadow-violet-glow flex-shrink-0">
-            <TrendingUp size={18} className="text-white" />
+            <TrendingUp size={18} className="text-[#FFFFFF]" />
           </div>
           <div>
             <p className="font-display font-semibold text-text-primary leading-none">FinDash</p>

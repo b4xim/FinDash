@@ -44,7 +44,7 @@ export default function WeeklyDigestCard() {
       {/* Header */}
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-violet flex items-center justify-center shadow-violet-glow flex-shrink-0">
-          <Mail size={18} className="text-white" />
+          <Mail size={18} className="text-[#FFFFFF]" />
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="font-display font-semibold text-text-primary">Weekly Digest Email</h2>

@@ -49,7 +49,7 @@ export default function SmartPicksPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-violet flex items-center justify-center shadow-violet-glow flex-shrink-0">
-                <Sparkles size={20} className="text-white" />
+                <Sparkles size={20} className="text-[#FFFFFF]" />
               </div>
               <div>
                 <h2 className="font-display font-semibold text-text-primary">
