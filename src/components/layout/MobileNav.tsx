@@ -3,17 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, CreditCard, Target, Flag, PieChart,
+  LayoutDashboard, CreditCard, PieChart, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Show only the 5 most-used pages in the bottom bar
+// Show only the 4 most-used pages in the bottom bar
 const BOTTOM_NAV = [
-  { href: "/overview",  label: "Overview",  icon: LayoutDashboard },
-  { href: "/spending",  label: "Spending",  icon: CreditCard },
-  { href: "/budget",    label: "Budget",    icon: Target },
-  { href: "/goals",     label: "Goals",     icon: Flag },
-  { href: "/investing", label: "Invest",    icon: PieChart },
+  { href: "/overview",    label: "Overview",    icon: LayoutDashboard },
+  { href: "/spending",    label: "Spending",    icon: CreditCard },
+  { href: "/investing",   label: "Invest",      icon: PieChart },
+  { href: "/smart-picks", label: "Smart Picks", icon: Sparkles },
 ];
 
 /**
@@ -25,7 +24,7 @@ export default function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-white/5 bg-navy-900/90 backdrop-blur-md">
+    <nav className="relative z-40 md:hidden border-t border-white/5 bg-navy-900/90 backdrop-blur-md flex-shrink-0">
       <div className="flex items-stretch h-16">
         {BOTTOM_NAV.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");

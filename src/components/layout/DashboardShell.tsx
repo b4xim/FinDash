@@ -12,7 +12,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex flex-col md:flex-row h-[100dvh] overflow-hidden">
       {/* Sidebar — passes toggle handlers for mobile drawer */}
       <Sidebar
         mobileOpen={sidebarOpen}
@@ -20,14 +20,13 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       />
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-navy-950">
+      <div className="flex-1 flex flex-col min-w-0 bg-navy-950 overflow-y-auto">
         {/*
           Pages render their own <Header> and need access to openMenu.
           We pass it via a context so every page's Header can trigger it.
         */}
         <MenuContext.Provider value={() => setSidebarOpen(true)}>
-          {/* Extra bottom padding on mobile so content isn't hidden behind MobileNav */}
-          <div className="flex-1 flex flex-col pb-16 md:pb-0">
+          <div className="flex-1 flex flex-col">
             {children}
           </div>
         </MenuContext.Provider>
