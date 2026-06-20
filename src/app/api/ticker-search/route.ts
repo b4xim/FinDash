@@ -39,33 +39,19 @@ export async function GET(req: NextRequest) {
   if (!q || q.length < 2) return NextResponse.json([]);
 
   try {
-    // Yahoo Finance autocomplete — add .NS suffix hint for Indian stocks
-    const url =
-      `https://query2.finance.yahoo.com/v1/finance/search` +
-      `?q=${encodeURIComponent(q)}` +
-      `&lang=en-US&region=IN` +
-      `&quotesCount=20&newsCount=0&enableFuzzyQuery=false` +
-      `&quotesQueryId=tss_match_phrase_query`;
+    // Dynamic import to keep this server-side only
+    const YahooFinance = await import("yahoo-finance2").then((m) => m.default);
+    // Suppress the survey notice that can clutter logs
+    // @ts-ignore - yahooFinance type is a bit tricky with dynamic imports
+    const yf = typeof YahooFinance === "function" ? new YahooFinance({ suppressNotices: ["yahooSurvey"] }) : YahooFinance;
 
-    const res = await fetch(url, {
-      headers: {
-        // Yahoo expects a browser-like UA; otherwise it may return 429
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-          "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "application/json",
-      },
-      // 5 second timeout
-      signal: AbortSignal.timeout(5000),
+    // Use yahoo-finance2 search which handles crumb/cookie auth properly
+    const result = await yf.search(q, {
+      newsCount: 0,
+      quotesCount: 20,
     });
 
-    if (!res.ok) {
-      console.error(`Yahoo Finance search error: ${res.status}`);
-      return NextResponse.json([], { status: 200 }); // fail gracefully, empty results
-    }
-
-    const json = (await res.json()) as YFSearchResponse;
-    const quotes = json.quotes ?? [];
+    const quotes = result.quotes ?? [];
 
     // Filter to NSE/BSE equity & ETF results only — exclude US, mutual funds, etc.
     const filtered: TickerResult[] = quotes
