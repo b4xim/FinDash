@@ -101,3 +101,13 @@ INSERT INTO transactions (date, description, amount, type, category, account, so
 -- ALTER TABLE holdings ADD COLUMN IF NOT EXISTS mfapi_code TEXT;
 -- ALTER TABLE holdings ADD COLUMN IF NOT EXISTS price_updated_at TIMESTAMPTZ;
 -- ALTER TABLE transactions ADD COLUMN IF NOT EXISTS card_last4 TEXT;
+
+-- ── Push Subscriptions table ────────────────────────────────
+-- Stores Web Push API subscription objects
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  endpoint      TEXT NOT NULL UNIQUE,
+  auth          TEXT NOT NULL,
+  p256dh        TEXT NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

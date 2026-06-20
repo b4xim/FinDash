@@ -119,6 +119,16 @@ async function runSheetSync(): Promise<{
     `✅ ${inserted} new, ${updated} updated, ${skipped} skipped` +
     (errors.length ? ` — ${errors.length} error(s)` : "");
 
+  // 4. Send Push Notification
+  if (inserted > 0 || updated > 0 || errors.length > 0) {
+    const { sendPushNotification } = await import("@/lib/push");
+    await sendPushNotification({
+      title: "Sheets Sync Complete",
+      body: message,
+      url: "/sync",
+    });
+  }
+
   return { inserted, updated, skipped, errors, message };
 }
 
