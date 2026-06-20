@@ -19,6 +19,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { requireAuth } from "@/lib/session";
 import { getWeeklyDigestData } from "@/lib/weeklyDigestData";
 import { renderWeeklyDigestEmail } from "@/lib/weeklyDigestTemplate";
 
@@ -62,19 +63,19 @@ Do not use bullet points, headers, or markdown. Just plain text.`;
 
 // ── Main handler ──────────────────────────────────────────────
 export async function GET(req: NextRequest) {
-  // ── Auth check — accept either CRON_SECRET header OR session cookie ──
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = req.headers.get("authorization");
+  // ── Auth: accept CRON_SECRET header (cron-job.org)
+  //         OR a valid session cookie (Settings "Send Now" button)
+  const cronSecret     = process.env.CRON_SECRET;
+  const authHeader     = req.headers.get("authorization");
   const providedSecret = authHeader?.replace("Bearer ", "").trim();
+  const cronMatches    = cronSecret && providedSecret === cronSecret;
 
-  // Allow if CRON_SECRET matches (for cron-job.org and Settings button)
-  // OR if no CRON_SECRET is set yet (dev mode)
-  const isAuthorized =
-    !cronSecret ||
-    providedSecret === cronSecret;
-
-  if (!isAuthorized) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // If the cron secret doesn't match, fall back to session auth
+  if (!cronMatches) {
+    const session = await requireAuth();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   // ── Check required env vars ───────────────────────────────
