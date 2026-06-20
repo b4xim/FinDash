@@ -1,7 +1,9 @@
 "use client";
 
-import { Bell, Menu } from "lucide-react";
+import { Sun, Moon, Menu } from "lucide-react";
 import { useMenuOpen } from "@/components/layout/DashboardShell";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 interface HeaderProps {
   title: string;
@@ -10,6 +12,12 @@ interface HeaderProps {
 
 export default function Header({ title, subtitle }: HeaderProps) {
   const openMenu = useMenuOpen();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Get current date for display
   const today = new Date().toLocaleDateString("en-IN", {
@@ -46,10 +54,12 @@ export default function Header({ title, subtitle }: HeaderProps) {
       <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
         <p className="text-text-muted text-xs hidden lg:block">{today}</p>
         <div className="h-4 w-px bg-white/10 hidden lg:block" />
-        <button className="btn-ghost p-2 rounded-lg text-text-muted hover:text-text-primary relative">
-          <Bell size={16} />
-          {/* Notification dot — show when there are pending syncs */}
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-violet rounded-full" />
+        <button 
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="btn-ghost p-2 rounded-lg text-text-muted hover:text-text-primary relative"
+          aria-label="Toggle theme"
+        >
+          {mounted && theme === "dark" ? <Sun size={16} /> : mounted ? <Moon size={16} /> : <div className="w-4 h-4" />}
         </button>
       </div>
     </header>

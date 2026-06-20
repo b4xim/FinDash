@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,13 +10,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Design system — charcoal dark grey + modern crimson red
+        white: "rgb(var(--color-white) / <alpha-value>)",
+        black: "rgb(var(--color-black) / <alpha-value>)",
+        // Design system
         navy: {
-          950: "#0A0A0A",
-          900: "#111111",
-          800: "#1A1A1A",
-          700: "#222222",
-          600: "#2A2A2A",
+          950: "rgb(var(--color-navy-950) / <alpha-value>)",
+          900: "rgb(var(--color-navy-900) / <alpha-value>)",
+          800: "rgb(var(--color-navy-800) / <alpha-value>)",
+          700: "rgb(var(--color-navy-700) / <alpha-value>)",
+          600: "rgb(var(--color-navy-600) / <alpha-value>)",
         },
         violet: {
           DEFAULT: "#E8253A",
@@ -37,14 +40,14 @@ const config: Config = {
           "fin-dim": "#FF5C7A22",
         },
         surface: {
-          DEFAULT: "#1A1A1A",
-          raised: "#222222",
-          overlay: "#2A2A2A",
+          DEFAULT: "rgb(var(--color-surface) / <alpha-value>)",
+          raised: "rgb(var(--color-surface-raised) / <alpha-value>)",
+          overlay: "rgb(var(--color-surface-overlay) / <alpha-value>)",
         },
         text: {
-          primary: "#F5F5F5",
-          secondary: "#A0A0A0",
-          muted: "#555555",
+          primary: "rgb(var(--color-text-primary) / <alpha-value>)",
+          secondary: "rgb(var(--color-text-secondary) / <alpha-value>)",
+          muted: "rgb(var(--color-text-muted) / <alpha-value>)",
         },
       },
       fontFamily: {
@@ -55,12 +58,12 @@ const config: Config = {
       backgroundImage: {
         "gradient-violet": "linear-gradient(135deg, #E8253A 0%, #C41E31 100%)",
         "gradient-gold": "linear-gradient(135deg, #FF6B6B 0%, #CC4444 100%)",
-        "gradient-card": "linear-gradient(145deg, #222222 0%, #1A1A1A 100%)",
+        "gradient-card": "linear-gradient(145deg, rgb(var(--color-surface-raised)) 0%, rgb(var(--color-surface)) 100%)",
       },
       boxShadow: {
         "violet-glow": "0 0 40px rgba(232, 37, 58, 0.25)",
-        "card": "0 4px 24px rgba(0,0,0,0.5)",
-        "card-hover": "0 8px 40px rgba(0,0,0,0.65)",
+        "card": "var(--shadow-card)",
+        "card-hover": "var(--shadow-card-hover)",
       },
       animation: {
         "fade-in": "fadeIn 0.4s ease-out",

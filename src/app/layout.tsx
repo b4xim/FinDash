@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Inter, JetBrains_Mono } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 // Font setup — loaded once, used via Tailwind font classes
@@ -49,9 +50,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${inter.variable} ${jetbrains.variable}`}>
+    <html lang="en" className={`${dmSans.variable} ${inter.variable} ${jetbrains.variable}`} suppressHydrationWarning>
       <body className="bg-navy-950 text-text-primary font-body antialiased">
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
