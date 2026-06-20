@@ -21,7 +21,7 @@ export interface PushPayload {
 export async function sendPushNotification(payload: PushPayload) {
   if (!vapidPublicKey || !vapidPrivateKey) {
     console.warn("VAPID keys not configured, skipping push notification.");
-    return;
+    return { sent: 0, errors: ["VAPID keys missing"] };
   }
 
   const supabase = getSupabaseAdmin();
@@ -31,9 +31,19 @@ export async function sendPushNotification(payload: PushPayload) {
     .from("push_subscriptions")
     .select("*");
 
-  if (error || !subs || subs.length === 0) return;
+  if (error) {
+    console.error("Supabase error fetching subscriptions:", error);
+    return { sent: 0, errors: [error.message] };
+  }
+
+  if (!subs || subs.length === 0) {
+    console.log("No push subscriptions found in database.");
+    return { sent: 0, errors: ["No subscriptions found. Did you enable them in Settings on your phone?"] };
+  }
 
   const payloadString = JSON.stringify(payload);
+  let sentCount = 0;
+  const pushErrors: any[] = [];
 
   const promises = subs.map(async (sub) => {
     const pushSubscription = {
@@ -46,15 +56,17 @@ export async function sendPushNotification(payload: PushPayload) {
 
     try {
       await webPush.sendNotification(pushSubscription, payloadString);
+      sentCount++;
     } catch (err: any) {
       if (err.statusCode === 404 || err.statusCode === 410) {
-        // Subscription expired or unsubscribed, clean it up
         await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
       } else {
         console.error("Failed to send push notification", err);
+        pushErrors.push(err.message || "Unknown push error");
       }
     }
   });
 
   await Promise.allSettled(promises);
+  return { sent: sentCount, errors: pushErrors };
 }

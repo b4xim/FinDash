@@ -14,13 +14,13 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    await sendPushNotification({
+    const result = await sendPushNotification({
       title: "FinDash Reminder 📝",
       body: "Don't forget to add your transactions for today!",
       url: "/spending",
     });
 
-    return NextResponse.json({ success: true, message: "Reminder push sent" });
+    return NextResponse.json({ success: true, message: "Reminder push triggered", result });
   } catch (err) {
     console.error("Reminder cron error:", err);
     return NextResponse.json({ error: "Failed to send reminder" }, { status: 500 });
