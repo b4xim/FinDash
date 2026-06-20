@@ -7,19 +7,20 @@
 
 import type { WeeklyDigestData } from "@/lib/weeklyDigestData";
 
-// ── Colour tokens (matching app palette) ──────────────────────
+// ── Colour tokens (matching app theme: charcoal dark + crimson red) ──
 const C = {
-  navy:       "#0A0E1A",
-  navyCard:   "#0F1628",
-  navyBorder: "#1E2845",
-  violet:     "#7C5CFC",
-  violetMid:  "#9B85FD",
-  emerald:    "#10D98C",
-  gold:       "#F5A623",
-  rose:       "#F43F5E",
-  textPrimary:"#E8EAF6",
-  textSecond: "#8A94B2",
-  textMuted:  "#4A5270",
+  navy:       "#0A0A0A",   // navy-950
+  navyCard:   "#111111",   // navy-900
+  navyBorder: "#2A2A2A",   // navy-600
+  crimson:    "#E8253A",   // violet DEFAULT (crimson red primary)
+  crimsonLight:"#FF3D52",  // violet-light
+  crimsonDark: "#C41E31",  // violet-dark
+  emerald:    "#10D98C",   // emerald-fin (positive/income)
+  gold:       "#FF6B6B",   // gold DEFAULT (warm red-orange)
+  rose:       "#FF5C7A",   // rose-fin (negative/spend)
+  textPrimary:"#F5F5F5",   // text-primary
+  textSecond: "#A0A0A0",   // text-secondary
+  textMuted:  "#555555",   // text-muted
   white:      "#FFFFFF",
 };
 
@@ -47,7 +48,7 @@ function categoryBar(name: string, amount: number, maxAmount: number): string {
         <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
           <tr>
             <td style="background: ${C.navyBorder}; border-radius: 3px; height: 6px; width: 100%;">
-              <div style="background: linear-gradient(90deg, ${C.violet}, ${C.violetMid}); border-radius: 3px; height: 6px; width: ${barPct}%;"></div>
+              <div style="background: linear-gradient(90deg, ${C.crimson}, ${C.crimsonLight}); border-radius: 3px; height: 6px; width: ${barPct}%;"></div>
             </td>
           </tr>
         </table>
@@ -105,8 +106,8 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
     <!-- AI Insight -->
     <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 24px;">
       <tr>
-        <td style="padding: 20px; background: linear-gradient(135deg, rgba(124,92,252,0.15), rgba(16,217,140,0.08)); border: 1px solid rgba(124,92,252,0.25); border-radius: 12px;">
-          <div style="font-size: 11px; color: ${C.violet}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-weight: 600;">✨ AI Weekly Insight</div>
+        <td style="padding: 20px; background: linear-gradient(135deg, rgba(232,37,58,0.12), rgba(16,217,140,0.06)); border: 1px solid rgba(232,37,58,0.22); border-radius: 12px;">
+          <div style="font-size: 11px; color: ${C.crimsonLight}; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-weight: 600;">✨ AI Weekly Insight</div>
           <div style="font-size: 14px; color: ${C.textPrimary}; line-height: 1.7;">${aiInsight}</div>
         </td>
       </tr>
@@ -119,15 +120,15 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FinDash Weekly Summary — ${weekLabel}</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #060912; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #0A0A0A; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
 
   <!-- Preheader (hidden preview text) -->
-  <div style="display: none; font-size: 1px; max-height: 0; overflow: hidden; color: #060912;">
+  <div style="display: none; font-size: 1px; max-height: 0; overflow: hidden; color: #0A0A0A;">
     Your FinDash weekly summary for ${weekLabel} — Spent ${formatINR(weekSpend)}, Saved ${formatINR(weekSavings)} ✨
   </div>
 
   <!-- Outer wrapper -->
-  <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; background-color: #060912;">
+  <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; background-color: #0A0A0A;">
     <tr>
       <td align="center" style="padding: 32px 16px;">
 
@@ -139,7 +140,7 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
             <td style="padding: 0 0 24px 0; text-align: center;">
               <!-- Logo wordmark -->
               <div style="display: inline-block; margin-bottom: 16px;">
-                <span style="font-size: 26px; font-weight: 800; background: linear-gradient(135deg, #7C5CFC, #10D98C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">FinDash</span>
+                <span style="font-size: 26px; font-weight: 800; background: linear-gradient(135deg, #E8253A, #FF6B6B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">FinDash</span>
               </div>
               <div style="font-size: 13px; color: ${C.textMuted}; margin-top: 4px; letter-spacing: 0.5px;">
                 Weekly Summary &nbsp;·&nbsp; ${weekLabel}
@@ -150,7 +151,7 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
           <!-- Divider line with gradient -->
           <tr>
             <td style="padding: 0 0 28px 0;">
-              <div style="height: 1px; background: linear-gradient(90deg, transparent, ${C.violet}, transparent);"></div>
+              <div style="height: 1px; background: linear-gradient(90deg, transparent, ${C.crimson}, transparent);"></div>
             </td>
           </tr>
 
@@ -229,7 +230,7 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; font-size: 14px; color: ${C.textPrimary}; font-weight: 600;">Net Worth</td>
-                  <td style="padding: 8px 0; text-align: right; font-size: 14px; color: ${C.violetMid}; font-weight: 700;">${formatINR(netWorth)}</td>
+                  <td style="padding: 8px 0; text-align: right; font-size: 14px; color: ${C.crimsonLight}; font-weight: 700;">${formatINR(netWorth)}</td>
                 </tr>
               </table>
             </td>
@@ -261,7 +262,7 @@ export function renderWeeklyDigestEmail(data: WeeklyDigestData, aiInsight?: stri
           <tr>
             <td style="text-align: center; padding: 8px 0 32px 0;">
               <a href="${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}"
-                style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, ${C.violet}, #9B85FD); color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px;">
+                style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, ${C.crimson}, ${C.crimsonLight}); color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px;">
                 Open FinDash Dashboard →
               </a>
             </td>
