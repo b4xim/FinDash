@@ -13,7 +13,7 @@ import {
   TrendingUp, TrendingDown, Wallet, PiggyBank,
   ArrowUpRight, ArrowDownRight, Minus,
   CheckCircle2, XCircle, HelpCircle,
-  Zap, Calendar, Trophy, BarChart3, AlertTriangle, Target, UtensilsCrossed,
+  Zap, Calendar, Trophy, BarChart3, AlertTriangle, Target, UtensilsCrossed, CreditCard as CardIcon
 } from "lucide-react";
 import { formatINR, pctChange } from "@/lib/utils";
 import Link from "next/link";
@@ -100,15 +100,28 @@ interface StatsResponse {
   foodSpendPct:        number;
 }
 
+interface CardGroup {
+  account: string;
+  last4: string | null;
+  thisCycleSpend: number;
+  totalSpend: number;
+}
+
 // ── Page ─────────────────────────────────────────────────────
 export default function OverviewPage() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
+  const [creditCards, setCreditCards] = useState<CardGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/stats")
-      .then(res => res.json())
-      .then(data => { setStats(data); setLoading(false); });
+    Promise.all([
+      fetch("/api/stats").then(res => res.json()),
+      fetch("/api/credit-cards").then(res => res.json())
+    ]).then(([statsData, ccData]) => {
+      setStats(statsData);
+      setCreditCards(ccData.cards || []);
+      setLoading(false);
+    });
   }, []);
 
   if (loading || !stats) {
@@ -174,6 +187,31 @@ export default function OverviewPage() {
             accent="bg-gradient-gold"
           />
         </div>
+
+        {/* ── Credit Card Split-up ── */}
+        {creditCards.length > 0 && (
+          <div>
+            <h2 className="font-display font-semibold text-text-primary mb-3 flex items-center gap-2">
+              <CardIcon size={16} className="text-emerald-400" /> Credit Cards (This Cycle)
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {creditCards.map(card => (
+                <div key={card.account} className="card p-4 flex items-center justify-between border border-emerald-500/10 bg-emerald-500/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                      <CardIcon size={14} className="text-emerald-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-display font-medium text-text-primary text-sm truncate">{card.account}</p>
+                      {card.last4 && <p className="text-text-muted text-xs font-mono">•••• {card.last4}</p>}
+                    </div>
+                  </div>
+                  <p className="font-mono font-semibold text-text-primary">{formatINR(card.thisCycleSpend)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Charts ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
