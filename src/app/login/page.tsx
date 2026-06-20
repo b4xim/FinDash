@@ -55,9 +55,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-display font-semibold text-text-primary tracking-tight">
             FinDash
           </h1>
-          <p className="text-text-secondary text-sm mt-1">
-            Your private financial command centre
-          </p>
+
         </div>
 
         {/* Card */}
@@ -121,25 +119,10 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Footer note */}
-          <p className="text-center text-text-muted text-xs mt-6">
-            Private dashboard — not publicly accessible
-          </p>
+
         </div>
 
-        {/* Bottom stats bar — decorative */}
-        <div className="mt-6 grid grid-cols-3 gap-3">
-          {[
-            { label: "Tracked since", value: "Jan '24" },
-            { label: "Categories", value: "10" },
-            { label: "Privacy", value: "100%" },
-          ].map((item) => (
-            <div key={item.label} className="card text-center py-3 px-2">
-              <p className="text-text-primary font-display font-semibold text-sm">{item.value}</p>
-              <p className="text-text-muted text-xs mt-0.5">{item.label}</p>
-            </div>
-          ))}
-        </div>
+
       </div>
 
       {/* Shake animation */}
