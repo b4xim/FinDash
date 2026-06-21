@@ -51,9 +51,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ["'DM Sans'", "sans-serif"],
-        body: ["'Inter'", "sans-serif"],
-        mono: ["'JetBrains Mono'", "monospace"],
+        display: ["var(--font-display)", "'DM Sans'", "sans-serif"],
+        body: ["var(--font-body)", "'Inter'", "sans-serif"],
+        mono: ["var(--font-mono)", "'Space Grotesk'", "monospace"],
       },
       backgroundImage: {
         "gradient-violet": "linear-gradient(135deg, #E8253A 0%, #C41E31 100%)",
