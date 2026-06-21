@@ -21,6 +21,7 @@
 // ============================================================
 
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { requireAuth } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -164,6 +165,10 @@ export async function POST() {
   const updated = results.filter(r => r.status === "updated").length;
   const skipped = results.filter(r => r.status === "skipped").length;
   const failed  = results.filter(r => r.status === "failed").length;
+
+  if (updated > 0) {
+    revalidateTag("holdings");
+  }
 
   return NextResponse.json({ updated, skipped, failed, results });
 }

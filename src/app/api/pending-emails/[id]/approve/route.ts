@@ -6,6 +6,7 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { requireAuth } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -72,6 +73,8 @@ export async function POST(
     console.error("Approve - update pending_email error:", updateError);
     // Transaction was created successfully, so don't fail the whole request
   }
+
+  revalidateTag("transactions");
 
   return NextResponse.json(transaction, { status: 201 });
 }

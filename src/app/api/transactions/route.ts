@@ -5,8 +5,36 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache, revalidateTag } from "next/cache";
 import { requireAuth } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
+
+const getCachedTransactions = unstable_cache(
+  async (month: string | null, category: string | null, type: string | null, limit: string | null) => {
+    const supabase = getSupabaseAdmin();
+    let query = supabase
+      .from("transactions")
+      .select("*")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (month) {
+      const [year, mon] = month.split("-");
+      const start = `${year}-${mon}-01`;
+      const end = new Date(parseInt(year), parseInt(mon), 0).toISOString().split("T")[0];
+      query = query.gte("date", start).lte("date", end);
+    }
+    if (category) query = query.eq("category", category);
+    if (type) query = query.eq("type", type);
+    if (limit) query = query.limit(parseInt(limit));
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+  },
+  ["transactions_list"],
+  { tags: ["transactions"] }
+);
 
 // GET /api/transactions?month=2024-06&category=Food&type=debit
 export async function GET(req: NextRequest) {
@@ -20,33 +48,10 @@ export async function GET(req: NextRequest) {
   const type     = searchParams.get("type");     // "debit" | "credit"
   const limit    = searchParams.get("limit");    // number
 
-  const supabase = getSupabaseAdmin();
-
-  // Start building query
-  let query = supabase
-    .from("transactions")
-    .select("*")
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false });
-
-  // Filter by month if provided (e.g. "2024-06")
-  if (month) {
-    const [year, mon] = month.split("-");
-    const start = `${year}-${mon}-01`;
-    // Last day of month
-    const end = new Date(parseInt(year), parseInt(mon), 0)
-      .toISOString()
-      .split("T")[0];
-    query = query.gte("date", start).lte("date", end);
-  }
-
-  if (category) query = query.eq("category", category);
-  if (type)     query = query.eq("type", type);
-  if (limit)    query = query.limit(parseInt(limit));
-
-  const { data, error } = await query;
-
-  if (error) {
+  let data;
+  try {
+    data = await getCachedTransactions(month, category, type, limit);
+  } catch (error: any) {
     console.error("GET /api/transactions error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -78,6 +83,8 @@ export async function POST(req: NextRequest) {
     console.error("POST /api/transactions error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  revalidateTag("transactions");
 
   return NextResponse.json(data, { status: 201 });
 }

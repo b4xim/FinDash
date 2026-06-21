@@ -11,6 +11,7 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { requireAuth } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { Category } from "@/types";
@@ -119,8 +120,11 @@ async function runSheetSync(): Promise<{
     `✅ ${inserted} new, ${updated} updated, ${skipped} skipped` +
     (errors.length ? ` — ${errors.length} error(s)` : "");
 
-  // 4. Send Push Notification
+  // 4. Send Push Notification and revalidate cache
   if (inserted > 0 || updated > 0 || errors.length > 0) {
+    if (inserted > 0 || updated > 0) {
+      revalidateTag("transactions");
+    }
     const { sendPushNotification } = await import("@/lib/push");
     await sendPushNotification({
       title: "Sheets Sync Complete",

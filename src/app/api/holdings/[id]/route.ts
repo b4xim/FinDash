@@ -5,6 +5,7 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { requireAuth } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -45,6 +46,8 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidateTag("holdings");
+
   return NextResponse.json(data);
 }
 
@@ -66,6 +69,8 @@ export async function DELETE(
     console.error("DELETE /api/holdings error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  revalidateTag("holdings");
 
   return NextResponse.json({ ok: true });
 }

@@ -12,8 +12,47 @@
 // ============================================================
 
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { requireAuth } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
+
+const getCachedStatsData = unstable_cache(
+  async (
+    thisMonthStart: string,
+    thisMonthEnd: string,
+    lastMonthStart: string,
+    lastMonthEnd: string,
+    trendRanges: { start: string; end: string; label: string }[]
+  ) => {
+    const supabase = getSupabaseAdmin();
+    const [
+      thisMonthRes,
+      lastMonthRes,
+      holdingsRes,
+      allTxnsRes,
+      budgetLimitsRes,
+      ...trendResults
+    ] = await Promise.all([
+      supabase.from("transactions").select("amount, type, category, necessary, date, description").gte("date", thisMonthStart).lte("date", thisMonthEnd),
+      supabase.from("transactions").select("amount, type").gte("date", lastMonthStart).lte("date", lastMonthEnd),
+      supabase.from("holdings").select("units, current_price, buy_price"),
+      supabase.from("transactions").select("amount, type, category"),
+      supabase.from("budget_limits").select("*"),
+      ...trendRanges.map(range => supabase.from("transactions").select("amount, type").gte("date", range.start).lte("date", range.end))
+    ]);
+
+    return {
+      thisMonthTxns: thisMonthRes.data,
+      lastMonthTxns: lastMonthRes.data,
+      holdings: holdingsRes.data,
+      allTxns: allTxnsRes.data,
+      budgetLimits: budgetLimitsRes.data,
+      trendDataResults: trendResults.map(r => r.data)
+    };
+  },
+  ["dashboard-stats-data"],
+  { tags: ["transactions", "holdings", "budget_limits"] }
+);
 
 export async function GET() {
   const session = await requireAuth();
@@ -37,31 +76,23 @@ export async function GET() {
   const lastMonth = monthRange(-1);
   const trendRanges = [5, 4, 3, 2, 1, 0].map(i => monthRange(-i));
 
-  const [
-    thisMonthRes,
-    lastMonthRes,
-    holdingsRes,
-    allTxnsRes,
-    budgetLimitsRes,
-    ...trendResults
-  ] = await Promise.all([
-    supabase.from("transactions").select("amount, type, category, necessary, date, description").gte("date", thisMonth.start).lte("date", thisMonth.end),
-    supabase.from("transactions").select("amount, type").gte("date", lastMonth.start).lte("date", lastMonth.end),
-    supabase.from("holdings").select("units, current_price, buy_price"),
-    supabase.from("transactions").select("amount, type, category"),
-    supabase.from("budget_limits").select("*"),
-    ...trendRanges.map(range => supabase.from("transactions").select("amount, type").gte("date", range.start).lte("date", range.end))
-  ]);
+  const cachedData = await getCachedStatsData(
+    thisMonth.start,
+    thisMonth.end,
+    lastMonth.start,
+    lastMonth.end,
+    trendRanges
+  );
 
-  const thisMonthTxns = thisMonthRes.data;
-  const lastMonthTxns = lastMonthRes.data;
-  const holdings = holdingsRes.data;
-  const allTxns = allTxnsRes.data;
-  const budgetLimits = budgetLimitsRes.data;
+  const thisMonthTxns = cachedData.thisMonthTxns;
+  const lastMonthTxns = cachedData.lastMonthTxns;
+  const holdings = cachedData.holdings;
+  const allTxns = cachedData.allTxns;
+  const budgetLimits = cachedData.budgetLimits;
 
   // ── Last 6 months for trend chart ──
   const trendData = trendRanges.map((range, i) => {
-    const txns = trendResults[i].data;
+    const txns = cachedData.trendDataResults[i];
     const spend  = txns?.filter(t => t.type === "debit").reduce((s, t) => s + Number(t.amount), 0) ?? 0;
     const income = txns?.filter(t => t.type === "credit").reduce((s, t) => s + Number(t.amount), 0) ?? 0;
     return { month: range.label, spend, income };

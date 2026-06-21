@@ -7,23 +7,34 @@
 // ============================================================
 
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { requireAuth } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
+
+const getCachedCreditCardTxns = unstable_cache(
+  async () => {
+    const supabase = getSupabaseAdmin();
+    const { data: transactions, error } = await supabase
+      .from("transactions")
+      .select("*")
+      .or("account.ilike.%card%,notes.ilike.%credit card%")
+      .order("date", { ascending: false });
+
+    if (error) throw error;
+    return transactions;
+  },
+  ["credit_card_txns"],
+  { tags: ["transactions"] }
+);
 
 export async function GET() {
   const session = await requireAuth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const supabase = getSupabaseAdmin();
-
-  // Pull all transactions where account looks like a credit card OR notes mention credit card
-  const { data: transactions, error } = await supabase
-    .from("transactions")
-    .select("*")
-    .or("account.ilike.%card%,notes.ilike.%credit card%")
-    .order("date", { ascending: false });
-
-  if (error) {
+  let transactions;
+  try {
+    transactions = await getCachedCreditCardTxns();
+  } catch (error: any) {
     console.error("GET /api/credit-cards error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
