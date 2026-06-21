@@ -205,8 +205,10 @@ export default function OverviewPage() {
                       <CardIcon size={14} className="text-emerald-400" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-display font-medium text-text-primary text-sm truncate">{card.account}</p>
-                      {card.last4 && <p className="text-text-muted text-xs font-mono">•••• {card.last4}</p>}
+                      <p className="font-display font-medium text-text-primary text-sm line-clamp-2 leading-tight pr-2" title={card.account}>
+                        {card.account}
+                      </p>
+                      {card.last4 && <p className="text-text-muted text-xs font-mono mt-0.5">•••• {card.last4}</p>}
                     </div>
                   </div>
                   <p className="font-mono font-semibold text-text-primary whitespace-nowrap pl-2">{formatINR(card.thisCycleSpend)}</p>
