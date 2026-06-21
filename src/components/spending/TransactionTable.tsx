@@ -127,34 +127,40 @@ export default function TransactionTable({ transactions, onEdit, onDelete }: Tra
             ) : (
               filtered.map(txn => (
                 <tr key={txn.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="table-cell whitespace-nowrap text-text-secondary text-xs sm:text-sm">
+                  <td className="table-cell whitespace-nowrap text-text-secondary text-xs">
                     {formatDate(txn.date)}
                   </td>
                   <td className="table-cell">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm sm:text-base leading-tight">{txn.description}</span>
+                      <span className="font-medium text-sm leading-tight">{txn.description}</span>
                       {txn.source === "gmail" && (
                         <Mail size={12} className="text-violet-light flex-shrink-0">
                           <title>Synced from Gmail</title>
                         </Mail>
                       )}
                       {txn.necessary === "Necessary" && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 flex-shrink-0 hidden sm:inline-flex">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 flex-shrink-0 hidden sm:inline-flex">
                           ✓ Necessary
                         </span>
                       )}
                       {txn.necessary === "Unnecessary" && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 flex-shrink-0 hidden sm:inline-flex">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-400 flex-shrink-0 hidden sm:inline-flex">
                           ✗ Unnecessary
                         </span>
                       )}
                     </div>
-                    {txn.notes && <p className="text-text-muted text-xs mt-0.5 line-clamp-1">{txn.notes}</p>}
+                    {txn.notes && <p className="text-text-muted text-xs mt-1 line-clamp-1">{txn.notes}</p>}
                     
-                    {/* Mobile-only Category & Account & Tags badge */}
-                    <div className="flex items-center gap-2 mt-1.5 sm:hidden flex-wrap">
+                    {/* Mobile-only details */}
+                    <div className="flex items-center gap-1.5 mt-1.5 sm:hidden flex-wrap">
+                      {txn.necessary === "Necessary" && (
+                        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">Nec</span>
+                      )}
+                      {txn.necessary === "Unnecessary" && (
+                        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400">Unnec</span>
+                      )}
                       <span
-                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full"
+                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md"
                         style={{
                           background: `${CATEGORY_COLORS[txn.category]}1A`,
                           color: CATEGORY_COLORS[txn.category],
@@ -163,7 +169,7 @@ export default function TransactionTable({ transactions, onEdit, onDelete }: Tra
                         <span className="w-1 h-1 rounded-full" style={{ background: CATEGORY_COLORS[txn.category] }} />
                         {txn.category}
                       </span>
-                      {txn.account && <span className="text-[10px] text-text-muted border border-white/10 px-1.5 py-0.5 rounded-md">{txn.account}</span>}
+                      {txn.account && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded-md">{txn.account}</span>}
                     </div>
                   </td>
 
@@ -180,7 +186,7 @@ export default function TransactionTable({ transactions, onEdit, onDelete }: Tra
                     </span>
                   </td>
                   <td className="table-cell hidden md:table-cell text-text-muted text-sm truncate max-w-[120px]">{txn.account || "—"}</td>
-                  <td className={`table-cell text-right font-mono font-medium text-sm sm:text-base ${txn.type === "credit" ? "text-emerald-fin" : "text-rose-fin"}`}>
+                  <td className={`table-cell text-right font-mono font-medium text-sm ${txn.type === "credit" ? "text-emerald-fin" : "text-rose-fin"}`}>
                     {txn.type === "credit" ? "+" : "−"}{formatINR(txn.amount)}
                   </td>
                   <td className="table-cell text-right w-12 sm:w-auto pr-2 sm:pr-4">
