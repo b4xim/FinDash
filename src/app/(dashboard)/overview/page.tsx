@@ -27,7 +27,7 @@ function StatCard({
 }) {
   const positive = (change ?? 0) >= 0;
   return (
-    <div className="card p-6 flex flex-col gap-4">
+    <div className="card p-6 flex flex-col justify-between h-full gap-4">
       <div className="flex items-start justify-between">
         <div>
           <p className="stat-label">{label}</p>
@@ -38,17 +38,19 @@ function StatCard({
           <Icon size={20} className="text-[#FFFFFF]" />
         </div>
       </div>
-      {change !== null && change !== undefined && (
-        <div className="flex items-center gap-1">
-          {change === 0 ? <Minus size={14} className="text-text-muted" />
-            : positive ? <ArrowUpRight size={14} className="text-emerald-fin" />
-            : <ArrowDownRight size={14} className="text-rose-fin" />}
-          <span className={`text-xs font-mono ${change === 0 ? "text-text-muted" : positive ? "text-emerald-fin" : "text-rose-fin"}`}>
-            {change === 0 ? "No change" : `${Math.abs(change).toFixed(1)}%`}
-          </span>
-          <span className="text-text-muted text-xs">{changeLabel}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-1 min-h-[20px] mt-auto">
+        {change !== null && change !== undefined && (
+          <>
+            {change === 0 ? <Minus size={14} className="text-text-muted" />
+              : positive ? <ArrowUpRight size={14} className="text-emerald-fin" />
+              : <ArrowDownRight size={14} className="text-rose-fin" />}
+            <span className={`text-xs font-mono ${change === 0 ? "text-text-muted" : positive ? "text-emerald-fin" : "text-rose-fin"}`}>
+              {change === 0 ? "No change" : `${Math.abs(change).toFixed(1)}%`}
+            </span>
+            <span className="text-text-muted text-xs">{changeLabel}</span>
+          </>
+        )}
+      </div>
     </div>
   );
 }
