@@ -18,6 +18,7 @@ import {
   NIFTY_MIDCAP_TICKERS,
   NIFTY_SMALLCAP_TICKERS,
   TOP_MF_SCHEMES,
+  TOP_ETF_TICKERS,
 } from "./nifty50";
 import type { SmartPick, PickSignal, RiskLevel, StockCategory } from "@/types";
 
@@ -218,7 +219,7 @@ async function getGeminiAnalysis(
 - "risk": one of "Low", "Medium", or "High" — for stocks, consider the segment (Nifty50=lower risk, Midcap=medium, Smallcap=higher risk) plus the volatility score
 - "rationale": a concise 1-2 sentence risk-adjusted rationale covering both potential returns and key risks for an Indian retail investor
 
-STOCKS (9 picks — 3 per segment):
+STOCKS & ETFs (12 picks — 3 per segment):
 ${stockSummary}
 
 MUTUAL FUNDS:
@@ -279,11 +280,12 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    // 1. Screen all three segments + mutual funds in parallel
-    const [nifty50Stocks, midcapStocks, smallcapStocks, allFunds] = await Promise.all([
+    // 1. Screen all three segments + ETFs + mutual funds in parallel
+    const [nifty50Stocks, midcapStocks, smallcapStocks, etfStocks, allFunds] = await Promise.all([
       screenTickers(NIFTY_50_TICKERS, "nifty50"),
       screenTickers(NIFTY_MIDCAP_TICKERS, "midcap"),
       screenTickers(NIFTY_SMALLCAP_TICKERS, "smallcap"),
+      screenTickers(TOP_ETF_TICKERS, "etf"),
       screenMutualFunds(),
     ]);
 
@@ -291,7 +293,8 @@ export async function GET() {
     const top3Nifty50 = pickTopN(nifty50Stocks, 3);
     const top3Midcap = pickTopN(midcapStocks, 3);
     const top3Smallcap = pickTopN(smallcapStocks, 3);
-    const allSelectedStocks = [...top3Nifty50, ...top3Midcap, ...top3Smallcap];
+    const top3Etfs = pickTopN(etfStocks, 3);
+    const allSelectedStocks = [...top3Nifty50, ...top3Midcap, ...top3Smallcap, ...top3Etfs];
 
     // 3. Top 5 MF picks by 3Y CAGR
     const filteredFunds = allFunds

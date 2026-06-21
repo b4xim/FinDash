@@ -166,7 +166,7 @@ export interface EmiLoan {
 
 export type PickSignal = "Strong Buy" | "Buy" | "Watch";
 export type RiskLevel = "Low" | "Medium" | "High";
-export type StockCategory = "nifty50" | "midcap" | "smallcap";
+export type StockCategory = "nifty50" | "midcap" | "smallcap" | "etf";
 
 export interface SmartPick {
   name: string;             // e.g. "HDFC Bank"

@@ -7,7 +7,7 @@
 
 import type { SmartPick } from "@/types";
 import SmartPickCard from "./SmartPickCard";
-import { TrendingUp, Landmark, BarChart2, Zap } from "lucide-react";
+import { TrendingUp, Landmark, BarChart2, Zap, PieChart } from "lucide-react";
 
 interface SmartPicksGridProps {
   picks: SmartPick[];
@@ -87,18 +87,26 @@ const SEGMENT_META = {
     badgeColor: "bg-rose-fin/15 text-rose-fin border border-rose-fin/20",
     icon: <Zap size={16} className="text-violet-light" />,
   },
+  etf: {
+    title: "ETF Picks",
+    subtitle: "Exchange Traded Funds — diversified baskets with low expense ratios",
+    badge: "Low Risk",
+    badgeColor: "bg-blue-500/15 text-blue-400 border border-blue-500/20",
+    icon: <PieChart size={16} className="text-violet-light" />,
+  },
 };
 
 export default function SmartPicksGrid({ picks, loading }: SmartPicksGridProps) {
   const nifty50Picks = picks.filter((p) => p.assetType === "stock" && p.stockCategory === "nifty50");
   const midcapPicks = picks.filter((p) => p.assetType === "stock" && p.stockCategory === "midcap");
   const smallcapPicks = picks.filter((p) => p.assetType === "stock" && p.stockCategory === "smallcap");
+  const etfPicks = picks.filter((p) => p.assetType === "stock" && p.stockCategory === "etf");
   const mfPicks = picks.filter((p) => p.assetType === "mutual_fund");
 
   if (loading) {
     return (
       <div className="space-y-10">
-        {(["nifty50", "midcap", "smallcap"] as const).map((seg) => {
+        {(["nifty50", "midcap", "smallcap", "etf"] as const).map((seg) => {
           const meta = SEGMENT_META[seg];
           return (
             <section key={seg}>
@@ -171,6 +179,18 @@ export default function SmartPicksGrid({ picks, loading }: SmartPicksGridProps) 
           <SegmentHeader {...SEGMENT_META.smallcap} />
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {smallcapPicks.map((pick) => (
+              <SmartPickCard key={pick.ticker} pick={pick} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── ETF Picks ── */}
+      {etfPicks.length > 0 && (
+        <section>
+          <SegmentHeader {...SEGMENT_META.etf} />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {etfPicks.map((pick) => (
               <SmartPickCard key={pick.ticker} pick={pick} />
             ))}
           </div>
