@@ -201,19 +201,21 @@ export default function OverviewPage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {creditCards.map(card => (
-                <div key={card.account} className="card p-4 flex items-center justify-between border border-emerald-500/10 bg-emerald-500/5">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                      <CardIcon size={14} className="text-emerald-400" />
+                <div key={card.account} className="card p-4 flex flex-col h-full border border-emerald-500/10 bg-emerald-500/5">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                      <CardIcon size={18} className="text-emerald-400" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-display font-medium text-text-primary text-sm line-clamp-2 leading-tight pr-2" title={card.account}>
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <p className="font-display font-medium text-text-primary text-sm leading-snug break-words">
                         {card.account}
                       </p>
-                      {card.last4 && <p className="text-text-muted text-xs font-mono mt-0.5">•••• {card.last4}</p>}
+                      {card.last4 && <p className="text-text-muted text-xs font-mono mt-1 opacity-70">•••• {card.last4}</p>}
                     </div>
                   </div>
-                  <p className="font-mono font-semibold text-text-primary whitespace-nowrap pl-2">{formatINR(card.thisCycleSpend)}</p>
+                  <div className="mt-auto pt-3 border-t border-emerald-500/10">
+                    <p className="font-mono font-semibold text-text-primary text-lg">{formatINR(card.thisCycleSpend)}</p>
+                  </div>
                 </div>
               ))}
             </div>
