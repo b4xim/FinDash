@@ -94,6 +94,7 @@ export const RELEVANT_SENDERS = [
   "alerts@sbicard.com",
   "onlinesbicard@sbicard.com",
   "alerts@axis.bank.in",
+  "alerts@hdfcbank.bank.in",
   // Investment platforms
   "noreply@zerodha.com",
   "support@groww.in",
