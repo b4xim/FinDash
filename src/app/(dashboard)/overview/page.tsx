@@ -200,7 +200,7 @@ export default function OverviewPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {creditCards.map(card => (
                 <div key={card.account} className="card p-4 flex items-center justify-between border border-emerald-500/10 bg-emerald-500/5">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
                       <CardIcon size={14} className="text-emerald-400" />
                     </div>
@@ -209,7 +209,7 @@ export default function OverviewPage() {
                       {card.last4 && <p className="text-text-muted text-xs font-mono">•••• {card.last4}</p>}
                     </div>
                   </div>
-                  <p className="font-mono font-semibold text-text-primary">{formatINR(card.thisCycleSpend)}</p>
+                  <p className="font-mono font-semibold text-text-primary whitespace-nowrap pl-2">{formatINR(card.thisCycleSpend)}</p>
                 </div>
               ))}
             </div>
