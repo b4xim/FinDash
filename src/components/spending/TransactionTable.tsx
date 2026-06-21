@@ -100,8 +100,68 @@ export default function TransactionTable({ transactions, onEdit, onDelete }: Tra
         </span>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
+      {/* ── Mobile card list (below sm breakpoint only) ── */}
+      <div className="sm:hidden divide-y divide-white/5">
+        {filtered.length === 0 ? (
+          <div className="px-4 py-12 text-center text-text-muted text-sm">
+            No transactions found. Try adjusting filters or add your first one.
+          </div>
+        ) : (
+          filtered.map(txn => (
+            <div key={txn.id} className="px-4 py-3">
+              {/* Row 1: Description + Amount */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <span className="font-medium text-sm text-text-primary truncate">{txn.description}</span>
+                  {txn.source === "gmail" && <Mail size={11} className="text-violet-light flex-shrink-0" />}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={`font-mono font-semibold text-sm ${txn.type === "credit" ? "text-emerald-fin" : "text-rose-fin"}`}>
+                    {txn.type === "credit" ? "+" : "−"}{formatINR(txn.amount)}
+                  </span>
+                  <button
+                    onClick={() => onEdit(txn)}
+                    className="p-1 rounded-md text-text-muted hover:text-violet-light hover:bg-violet/10 transition-colors"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Row 2: Notes (if any) */}
+              {txn.notes && <p className="text-text-muted text-[11px] mt-0.5 line-clamp-1">{txn.notes}</p>}
+
+              {/* Row 3: Date + Tags inline */}
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                <span className="text-[10px] text-text-muted font-mono">{formatDate(txn.date)}</span>
+                <span className="text-white/10">·</span>
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] px-1.5 py-px rounded"
+                  style={{
+                    background: `${CATEGORY_COLORS[txn.category]}1A`,
+                    color: CATEGORY_COLORS[txn.category],
+                  }}
+                >
+                  <span className="w-1 h-1 rounded-full" style={{ background: CATEGORY_COLORS[txn.category] }} />
+                  {txn.category}
+                </span>
+                {txn.necessary === "Necessary" && (
+                  <span className="text-[9px] font-medium px-1.5 py-px rounded bg-emerald-500/10 text-emerald-400">Nec</span>
+                )}
+                {txn.necessary === "Unnecessary" && (
+                  <span className="text-[9px] font-medium px-1.5 py-px rounded bg-rose-500/10 text-rose-400">Unnec</span>
+                )}
+                {txn.account && (
+                  <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-px rounded">{txn.account}</span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ── Desktop/tablet table (sm and above) ── */}
+      <div className="overflow-x-auto hidden sm:block">
         <table className="w-full">
           <thead>
             <tr>
@@ -109,7 +169,7 @@ export default function TransactionTable({ transactions, onEdit, onDelete }: Tra
                 <div className="flex items-center gap-1">Date <ArrowUpDown size={11} /></div>
               </th>
               <th className="table-header">Description</th>
-              <th className="table-header hidden sm:table-cell">Category</th>
+              <th className="table-header">Category</th>
               <th className="table-header hidden md:table-cell">Account</th>
               <th className="table-header cursor-pointer select-none text-right" onClick={() => toggleSort("amount")}>
                 <div className="flex items-center gap-1 justify-end">Amount <ArrowUpDown size={11} /></div>
@@ -139,41 +199,19 @@ export default function TransactionTable({ transactions, onEdit, onDelete }: Tra
                         </Mail>
                       )}
                       {txn.necessary === "Necessary" && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 flex-shrink-0 hidden sm:inline-flex">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 flex-shrink-0">
                           ✓ Necessary
                         </span>
                       )}
                       {txn.necessary === "Unnecessary" && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-400 flex-shrink-0 hidden sm:inline-flex">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-400 flex-shrink-0">
                           ✗ Unnecessary
                         </span>
                       )}
                     </div>
                     {txn.notes && <p className="text-text-muted text-xs mt-1 line-clamp-1">{txn.notes}</p>}
-                    
-                    {/* Mobile-only details */}
-                    <div className="flex items-center gap-1.5 mt-1.5 sm:hidden flex-wrap">
-                      {txn.necessary === "Necessary" && (
-                        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">Nec</span>
-                      )}
-                      {txn.necessary === "Unnecessary" && (
-                        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400">Unnec</span>
-                      )}
-                      <span
-                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md"
-                        style={{
-                          background: `${CATEGORY_COLORS[txn.category]}1A`,
-                          color: CATEGORY_COLORS[txn.category],
-                        }}
-                      >
-                        <span className="w-1 h-1 rounded-full" style={{ background: CATEGORY_COLORS[txn.category] }} />
-                        {txn.category}
-                      </span>
-                      {txn.account && <span className="text-[10px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded-md">{txn.account}</span>}
-                    </div>
                   </td>
-
-                  <td className="table-cell hidden sm:table-cell">
+                  <td className="table-cell">
                     <span
                       className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full"
                       style={{
@@ -189,8 +227,8 @@ export default function TransactionTable({ transactions, onEdit, onDelete }: Tra
                   <td className={`table-cell text-right font-mono font-medium text-sm ${txn.type === "credit" ? "text-emerald-fin" : "text-rose-fin"}`}>
                     {txn.type === "credit" ? "+" : "−"}{formatINR(txn.amount)}
                   </td>
-                  <td className="table-cell text-right w-12 sm:w-auto pr-2 sm:pr-4">
-                    <div className="flex items-center justify-end gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className="table-cell text-right">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => onEdit(txn)}
                         className="p-1.5 rounded-lg text-text-muted hover:text-violet-light hover:bg-violet/10 transition-colors"
@@ -199,7 +237,7 @@ export default function TransactionTable({ transactions, onEdit, onDelete }: Tra
                       </button>
                       <button
                         onClick={() => onDelete(txn)}
-                        className="p-1.5 rounded-lg text-text-muted hover:text-rose-fin hover:bg-rose-fin/10 transition-colors hidden sm:flex"
+                        className="p-1.5 rounded-lg text-text-muted hover:text-rose-fin hover:bg-rose-fin/10 transition-colors"
                       >
                         <Trash2 size={14} />
                       </button>
