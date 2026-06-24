@@ -6,7 +6,7 @@
 // and strategic long-term advice for all current holdings.
 // ============================================================
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Brain,
   Sparkles,
@@ -135,6 +135,17 @@ export default function AIPortfolioAnalysis() {
   const [expanded, setExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<"holdings" | "categories" | "strategy">("holdings");
 
+  useEffect(() => {
+    try {
+      const storedAnalysis = localStorage.getItem("aiPortfolioAnalysis_data");
+      if (storedAnalysis) {
+        setAnalysis(JSON.parse(storedAnalysis));
+      }
+    } catch (e) {
+      console.error("Failed to load portfolio analysis from localStorage", e);
+    }
+  }, []);
+
   async function handleAnalyse() {
     setLoading(true);
     setError(null);
@@ -150,6 +161,12 @@ export default function AIPortfolioAnalysis() {
       } else {
         setAnalysis(data as PortfolioAnalysisResult);
         setActiveTab("holdings");
+        
+        try {
+          localStorage.setItem("aiPortfolioAnalysis_data", JSON.stringify(data));
+        } catch (e) {
+          console.error("Failed to save portfolio analysis to localStorage", e);
+        }
       }
     } catch {
       setError("Network error — check your connection and try again.");

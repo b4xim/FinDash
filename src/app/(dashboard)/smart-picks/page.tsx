@@ -5,7 +5,7 @@
 // Uses Yahoo Finance + MFapi.in for data, Gemini for analysis
 // ============================================================
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import SmartPicksGrid from "@/components/smart-picks/SmartPicksGrid";
 import { SmartPick } from "@/types";
@@ -16,6 +16,22 @@ export default function SmartPicksPage() {
   const [loading, setLoading] = useState(false);
   const [refreshedAt, setRefreshedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const storedPicks = localStorage.getItem("smartPicks_data");
+      const storedRefreshedAt = localStorage.getItem("smartPicks_refreshedAt");
+      if (storedPicks) {
+        setPicks(JSON.parse(storedPicks));
+      }
+      if (storedRefreshedAt) {
+        setRefreshedAt(storedRefreshedAt);
+      }
+    } catch (e) {
+      console.error("Failed to load smart picks from localStorage", e);
+    }
+  }, []);
 
   async function handleRefresh() {
     setLoading(true);
@@ -29,8 +45,19 @@ export default function SmartPicksPage() {
       }
 
       const data = await res.json();
-      setPicks(data.picks || []);
+      const newPicks = data.picks || [];
+      setPicks(newPicks);
       setRefreshedAt(data.refreshedAt);
+
+      // Save to localStorage
+      try {
+        localStorage.setItem("smartPicks_data", JSON.stringify(newPicks));
+        if (data.refreshedAt) {
+          localStorage.setItem("smartPicks_refreshedAt", data.refreshedAt);
+        }
+      } catch (e) {
+        console.error("Failed to save smart picks to localStorage", e);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
