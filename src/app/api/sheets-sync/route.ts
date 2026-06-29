@@ -100,13 +100,28 @@ async function runSheetSync(): Promise<{
 
     const { data: existing } = await supabase
       .from("transactions")
-      .select("id")
+      .select("id, date, description, amount, category, account, notes, necessary, source")
       .eq("gmail_msg_id", dedupKey)
       .maybeSingle();
 
     if (existing) {
-      const { error } = await supabase.from("transactions").update(record).eq("id", existing.id);
-      if (error) errors.push(`Row ${row.row_num}: ${error.message}`); else updated++;
+      // Compare every field — only update if something actually changed
+      const hasChanged =
+        existing.date        !== record.date        ||
+        existing.description !== record.description ||
+        existing.amount      !== record.amount       ||
+        existing.category    !== record.category     ||
+        (existing.account   ?? undefined) !== record.account   ||
+        (existing.notes     ?? undefined) !== record.notes     ||
+        (existing.necessary ?? undefined) !== record.necessary ||
+        existing.source      !== record.source;
+
+      if (!hasChanged) {
+        skipped++;
+      } else {
+        const { error } = await supabase.from("transactions").update(record).eq("id", existing.id);
+        if (error) errors.push(`Row ${row.row_num}: ${error.message}`); else updated++;
+      }
     } else {
       const { error } = await supabase.from("transactions").insert([record]);
       if (error) errors.push(`Row ${row.row_num}: ${error.message}`); else inserted++;
