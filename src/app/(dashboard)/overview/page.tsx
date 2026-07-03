@@ -2,7 +2,9 @@
 
 // ============================================================
 // Overview Page — net worth, spend/income, charts, insights,
-//                 budget alerts, necessary vs unnecessary
+//                 budget alerts, necessary vs unnecessary,
+//                 + health score, savings sparkline, EMI,
+//                 goals, cash flow, top transactions, MoM diff
 // ============================================================
 
 import { useState, useEffect } from "react";
@@ -13,10 +15,16 @@ import {
   TrendingUp, TrendingDown, Wallet, PiggyBank,
   ArrowUpRight, ArrowDownRight, Minus,
   CheckCircle2, XCircle, HelpCircle,
-  Zap, Calendar, Trophy, BarChart3, AlertTriangle, Target, UtensilsCrossed, CreditCard as CardIcon, Loader2
+  Zap, Calendar, Trophy, BarChart3, AlertTriangle, Target, UtensilsCrossed,
+  CreditCard as CardIcon, Loader2, Heart, Banknote, ChevronDown, ChevronUp,
+  Receipt, TrendingDown as TrendDown, Landmark, Flag, Star,
 } from "lucide-react";
-import { formatINR, pctChange } from "@/lib/utils";
+import { formatINR, pctChange, CATEGORY_COLORS } from "@/lib/utils";
 import Link from "next/link";
+import {
+  AreaChart, Area, ResponsiveContainer, Tooltip as RechartsTooltip,
+  XAxis, YAxis,
+} from "recharts";
 
 // ── Shared StatCard ──────────────────────────────────────────
 function StatCard({
@@ -73,10 +81,80 @@ function InsightTile({ icon: Icon, iconClass, label, value, sub }: {
   );
 }
 
+// ── Savings sparkline tooltip ──────────────────────────────
+function SavingsTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
+  if (!active || !payload?.length) return null;
+  const val = payload[0].value;
+  return (
+    <div className="bg-surface-overlay border border-white/10 rounded-xl px-3 py-2 text-xs shadow-card">
+      <p className="text-text-muted mb-1">{label}</p>
+      <p className={`font-mono font-semibold ${val >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+        {val >= 0 ? "+" : ""}{formatINR(val)}
+      </p>
+    </div>
+  );
+}
+
+// ── Financial health gauge (SVG ring) ─────────────────────
+function HealthGauge({ score }: { score: number }) {
+  const size = 140;
+  const strokeW = 12;
+  const r = (size - strokeW) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (score / 100) * circ;
+  const color = score >= 75 ? "#10D98C" : score >= 50 ? "#F59E0B" : "#F43F5E";
+  const label = score >= 75 ? "Excellent" : score >= 50 ? "Good" : "Needs Work";
+
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={strokeW} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke={color} strokeWidth={strokeW}
+          strokeDasharray={`${dash} ${circ}`}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dasharray 1s ease" }}
+        />
+      </svg>
+      <div className="text-center -mt-[74px]">
+        <p className="font-mono font-bold text-3xl text-text-primary">{score}</p>
+        <p className="text-xs font-medium mt-0.5" style={{ color }}>{label}</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Goal progress ring (small SVG) ──────────────────────────
+function GoalRing({ pct, color }: { pct: number; color: string }) {
+  const size = 56;
+  const sw = 5;
+  const r = (size - sw) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  return (
+    <svg width={size} height={size} className="-rotate-90 flex-shrink-0">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={sw} />
+      <circle
+        cx={size / 2} cy={size / 2} r={r} fill="none"
+        stroke={color} strokeWidth={sw}
+        strokeDasharray={`${dash} ${circ}`}
+        strokeLinecap="round"
+        style={{ transition: "stroke-dasharray 0.8s ease" }}
+      />
+    </svg>
+  );
+}
+
 // ── Types ────────────────────────────────────────────────────
 interface NecessaryBreakdown { necessary: number; unnecessary: number; untagged: number }
 interface BiggestExpense     { description: string; amount: number; category: string }
 interface BudgetAlert        { category: string; spent: number; limit: number; pct: number; alertAt: number }
+interface GoalItem           { name: string; target: number; saved: number; pct: number; color: string; icon: string; deadline: string | null }
+interface CashFlowItem       { label: string; amount: number; color: string }
+interface TopTxn             { description: string; amount: number; category: string; date: string }
+interface CategoryDiff       { category: string; thisMonth: number; lastMonth: number; change: number; changePct: number }
+interface HealthItem         { label: string; score: number; maxScore: number; tip: string }
 
 interface StatsResponse {
   thisMonth:           { spend: number; income: number };
@@ -95,11 +173,23 @@ interface StatsResponse {
   topSpendDay:         string | null;
   emergencyMonths:     number;
   budgetAlerts:        BudgetAlert[];
-  // Food & Dining
   foodSpendThisMonth:  number;
   avgDailyFoodSpend:   number;
   foodTxnCount:        number;
   foodSpendPct:        number;
+  // New fields
+  savingsTrend:        { month: string; savings: number }[];
+  activeEmiCount:      number;
+  totalMonthlyEmi:     number;
+  emiAsPctOfIncome:    number;
+  goals:               GoalItem[];
+  totalGoalTarget:     number;
+  totalGoalSaved:      number;
+  cashFlowBreakdown:   CashFlowItem[];
+  topTransactions:     TopTxn[];
+  categoryComparison:  CategoryDiff[];
+  financialHealthScore: number;
+  healthBreakdown:     HealthItem[];
 }
 
 interface CardGroup {
@@ -114,6 +204,7 @@ export default function OverviewPage() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [creditCards, setCreditCards] = useState<CardGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [healthExpanded, setHealthExpanded] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -154,6 +245,15 @@ export default function OverviewPage() {
   // Budget alerts (only show those at/above threshold)
   const activeAlerts = (stats.budgetAlerts ?? []).filter(a => a.pct >= a.alertAt);
 
+  // Health score color
+  const healthColor = stats.financialHealthScore >= 75 ? "#10D98C" : stats.financialHealthScore >= 50 ? "#F59E0B" : "#F43F5E";
+
+  // Savings this month
+  const savedThisMonth = stats.thisMonth.income - stats.thisMonth.spend;
+
+  // Cash flow total for % calc
+  const cfTotal = stats.cashFlowBreakdown.reduce((s, c) => s + c.amount, 0);
+
   return (
     <>
       <Header title="Overview" subtitle="Your financial snapshot" />
@@ -191,6 +291,53 @@ export default function OverviewPage() {
             icon={PiggyBank}
             accent="bg-gradient-gold"
           />
+        </div>
+
+        {/* ── Financial Health Score ── */}
+        <div className="card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="font-display font-semibold text-text-primary flex items-center gap-2">
+                <Heart size={16} className="text-rose-400" /> Financial Health Score
+              </p>
+              <p className="text-text-muted text-sm mt-0.5">Based on 6 key financial indicators</p>
+            </div>
+            <button
+              onClick={() => setHealthExpanded(v => !v)}
+              className="text-xs text-violet-light hover:underline flex items-center gap-1"
+            >
+              {healthExpanded ? "Less" : "Details"}
+              {healthExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <HealthGauge score={stats.financialHealthScore} />
+            <div className="flex-1 w-full space-y-3">
+              {stats.healthBreakdown.map(item => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-text-secondary text-xs font-medium">{item.label}</span>
+                    <span className="text-xs font-mono" style={{ color: item.score >= item.maxScore * 0.7 ? "#10D98C" : item.score >= item.maxScore * 0.4 ? "#F59E0B" : "#F43F5E" }}>
+                      {item.score}/{item.maxScore}
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${(item.score / item.maxScore) * 100}%`,
+                        background: item.score >= item.maxScore * 0.7 ? "#10D98C" : item.score >= item.maxScore * 0.4 ? "#F59E0B" : "#F43F5E",
+                      }}
+                    />
+                  </div>
+                  {healthExpanded && (
+                    <p className="text-text-muted text-xs mt-1">{item.tip}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* ── Credit Card Split-up ── */}
@@ -236,19 +383,103 @@ export default function OverviewPage() {
           </div>
         </div>
 
+        {/* ── Cash Flow Breakdown ── */}
+        {stats.thisMonth.income > 0 && stats.cashFlowBreakdown.length > 0 && (
+          <div className="card p-6">
+            <div className="flex items-start justify-between mb-5 gap-2 flex-wrap">
+              <div>
+                <p className="font-display font-semibold text-text-primary flex items-center gap-2">
+                  <Banknote size={16} className="text-cyan-400" /> Cash Flow Breakdown
+                </p>
+                <p className="text-text-muted text-sm mt-0.5">Where your income goes this month</p>
+              </div>
+              <span className="text-xs font-mono text-text-muted bg-white/5 px-3 py-1 rounded-full">
+                Income: {formatINR(stats.thisMonth.income)}
+              </span>
+            </div>
+
+            {/* Stacked bar */}
+            <div className="h-8 rounded-xl overflow-hidden flex mb-4 gap-0.5">
+              {stats.cashFlowBreakdown.map(item => (
+                <div
+                  key={item.label}
+                  className="h-full transition-all duration-700 first:rounded-l-xl last:rounded-r-xl"
+                  style={{
+                    width: `${cfTotal > 0 ? (item.amount / Math.max(cfTotal, stats.thisMonth.income)) * 100 : 0}%`,
+                    background: item.color,
+                    opacity: 0.85,
+                  }}
+                  title={`${item.label}: ${formatINR(item.amount)}`}
+                />
+              ))}
+            </div>
+
+            {/* Legend */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {stats.cashFlowBreakdown.map(item => (
+                <div key={item.label} className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.color }} />
+                  <div className="min-w-0">
+                    <p className="text-text-muted text-xs truncate">{item.label}</p>
+                    <p className="font-mono text-text-primary text-xs font-medium">{formatINR(item.amount)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Insight tiles ── */}
         <div>
           <h2 className="font-display font-semibold text-text-primary mb-3 flex items-center gap-2">
             <Zap size={16} className="text-amber-400" /> Insights
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <InsightTile
-              icon={TrendingUp}
-              iconClass={stats.savingsRate !== null && stats.savingsRate >= 0 ? "bg-emerald-500/70" : "bg-rose-500/70"}
-              label="Savings Rate"
-              value={stats.savingsRate !== null ? `${stats.savingsRate.toFixed(1)}%` : "—"}
-              sub="of income saved this month"
-            />
+            {/* Savings sparkline tile */}
+            <div className="card p-5 flex flex-col gap-2 sm:col-span-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Savings Trend</p>
+                  <p className={`font-mono font-semibold text-xl mt-0.5 ${savedThisMonth >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    {savedThisMonth >= 0 ? "+" : ""}{formatINR(savedThisMonth)}
+                  </p>
+                  <p className="text-text-muted text-xs mt-0.5">
+                    {stats.savingsRate !== null
+                      ? `Savings rate: ${stats.savingsRate.toFixed(1)}%`
+                      : "No income recorded this month"}
+                  </p>
+                </div>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${savedThisMonth >= 0 ? "bg-emerald-500/70" : "bg-rose-500/70"}`}>
+                  <TrendingUp size={17} className="text-[#FFFFFF]" />
+                </div>
+              </div>
+              {stats.savingsTrend.length > 0 && (
+                <div className="h-20 -mx-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={stats.savingsTrend} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="savingsGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%"  stopColor="#10D98C" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#10D98C" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="month" hide />
+                      <YAxis hide />
+                      <RechartsTooltip content={<SavingsTooltip />} />
+                      <Area
+                        type="monotone"
+                        dataKey="savings"
+                        stroke="#10D98C"
+                        strokeWidth={2}
+                        fill="url(#savingsGrad)"
+                        dot={false}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+
             <InsightTile
               icon={BarChart3}
               iconClass="bg-violet/70"
@@ -270,8 +501,80 @@ export default function OverviewPage() {
               value={stats.topSpendDay ?? "—"}
               sub="Most spend happens on this day"
             />
+            <InsightTile
+              icon={Landmark}
+              iconClass="bg-indigo-500/70"
+              label="Emergency Fund"
+              value={`${stats.emergencyMonths.toFixed(1)} mo`}
+              sub={stats.emergencyMonths >= 3 ? "Healthy buffer ✓" : "Aim for 3+ months"}
+            />
           </div>
         </div>
+
+        {/* ── Top 5 Transactions ── */}
+        {stats.topTransactions.length > 0 && (
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-semibold text-text-primary flex items-center gap-2">
+                <Receipt size={16} className="text-violet-light" /> Top Expenses This Month
+              </h2>
+              <Link href="/spending" className="text-xs text-violet-light hover:underline">View all →</Link>
+            </div>
+            <div className="space-y-2">
+              {stats.topTransactions.map((txn, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-surface-overlay hover:bg-white/5 transition-colors">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CATEGORY_COLORS[txn.category] ?? "#4A5270" }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-text-primary text-sm font-medium truncate">{txn.description}</p>
+                    <p className="text-text-muted text-xs">{txn.category} · {new Date(txn.date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</p>
+                  </div>
+                  <p className="font-mono font-semibold text-text-primary text-sm flex-shrink-0">{formatINR(txn.amount)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Month-over-Month Category Changes ── */}
+        {stats.categoryComparison.length > 0 && (
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-semibold text-text-primary flex items-center gap-2">
+                <BarChart3 size={16} className="text-amber-400" /> Category Changes vs Last Month
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {stats.categoryComparison.slice(0, 6).map(c => {
+                const isIncrease = c.change > 0;
+                return (
+                  <div key={c.category} className="bg-surface-overlay rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ background: CATEGORY_COLORS[c.category] ?? "#4A5270" }} />
+                        <span className="text-text-primary text-sm font-medium">{c.category}</span>
+                      </div>
+                      <span className={`text-xs font-mono px-2 py-0.5 rounded-full flex items-center gap-0.5
+                        ${isIncrease ? "bg-rose-500/10 text-rose-400" : "bg-emerald-500/10 text-emerald-400"}`}>
+                        {isIncrease ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                        {Math.abs(c.changePct).toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="text-text-muted text-xs">This month</p>
+                        <p className="font-mono font-semibold text-text-primary text-sm">{formatINR(c.thisMonth)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-text-muted text-xs">Last month</p>
+                        <p className="font-mono text-text-secondary text-sm">{formatINR(c.lastMonth)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── Food & Dining spotlight ── */}
         {(stats.foodSpendThisMonth > 0 || stats.foodTxnCount > 0) && (
@@ -299,7 +602,6 @@ export default function OverviewPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-              {/* Avg daily food spend */}
               <div className="bg-surface-overlay rounded-xl p-4">
                 <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Avg Daily</p>
                 <p className="font-mono font-bold text-2xl mt-1" style={{ color: "#f97316" }}>
@@ -307,8 +609,6 @@ export default function OverviewPage() {
                 </p>
                 <p className="text-text-muted text-xs mt-1">per day so far this month</p>
               </div>
-
-              {/* Total this month */}
               <div className="bg-surface-overlay rounded-xl p-4">
                 <p className="text-text-muted text-xs font-medium uppercase tracking-wider">This Month</p>
                 <p className="font-mono font-bold text-2xl mt-1 text-text-primary">
@@ -318,8 +618,6 @@ export default function OverviewPage() {
                   across {stats.foodTxnCount} transaction{stats.foodTxnCount !== 1 ? "s" : ""}
                 </p>
               </div>
-
-              {/* Projected end-of-month */}
               <div className="bg-surface-overlay rounded-xl p-4">
                 <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Projected</p>
                 <p className="font-mono font-bold text-2xl mt-1 text-text-primary">
@@ -329,7 +627,6 @@ export default function OverviewPage() {
               </div>
             </div>
 
-            {/* Share-of-spend bar */}
             <div>
               <div className="flex justify-between text-xs text-text-muted mb-1.5">
                 <span>Food &amp; Dining share of total spend</span>
@@ -355,6 +652,114 @@ export default function OverviewPage() {
                   ? "💡 Moderate — you're spending a notable chunk on food"
                   : "✅ Well-balanced food spend"}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── EMI Obligations ── */}
+        {stats.activeEmiCount > 0 && (
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <p className="font-display font-semibold text-text-primary flex items-center gap-2">
+                  <CardIcon size={16} className="text-pink-400" /> EMI Obligations
+                </p>
+                <p className="text-text-muted text-sm mt-0.5">Fixed monthly outflows this month</p>
+              </div>
+              <Link href="/emi" className="text-xs text-violet-light hover:underline">Manage →</Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+              <div className="bg-surface-overlay rounded-xl p-4">
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Active EMIs</p>
+                <p className="font-mono font-bold text-2xl mt-1 text-text-primary">{stats.activeEmiCount}</p>
+                <p className="text-text-muted text-xs mt-1">loans running</p>
+              </div>
+              <div className="bg-surface-overlay rounded-xl p-4">
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Monthly Total</p>
+                <p className="font-mono font-bold text-2xl mt-1 text-text-primary">{formatINR(stats.totalMonthlyEmi)}</p>
+                <p className="text-text-muted text-xs mt-1">per month outflow</p>
+              </div>
+              <div className="bg-surface-overlay rounded-xl p-4">
+                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">% of Income</p>
+                <p className={`font-mono font-bold text-2xl mt-1 ${stats.emiAsPctOfIncome > 30 ? "text-rose-400" : stats.emiAsPctOfIncome > 20 ? "text-amber-400" : "text-emerald-400"}`}>
+                  {stats.emiAsPctOfIncome.toFixed(1)}%
+                </p>
+                <p className="text-text-muted text-xs mt-1">{stats.emiAsPctOfIncome <= 30 ? "within healthy range" : "consider reducing debt"}</p>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs text-text-muted mb-1.5">
+                <span>EMI as % of monthly income</span>
+                <span className="font-mono">{stats.emiAsPctOfIncome.toFixed(1)}% / 30% threshold</span>
+              </div>
+              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${Math.min(stats.emiAsPctOfIncome, 100)}%`,
+                    background: stats.emiAsPctOfIncome > 30
+                      ? "linear-gradient(90deg,#f43f5e,#ef4444)"
+                      : "linear-gradient(90deg,#7C5CFC,#F472B6)",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Goals Progress Snapshot ── */}
+        {stats.goals.length > 0 && (
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <p className="font-display font-semibold text-text-primary flex items-center gap-2">
+                  <Flag size={16} className="text-violet-light" /> Goals Progress
+                </p>
+                <p className="text-text-muted text-sm mt-0.5">Active financial goals</p>
+              </div>
+              <Link href="/goals" className="text-xs text-violet-light hover:underline">View all →</Link>
+            </div>
+
+            {/* Overall progress bar */}
+            {stats.totalGoalTarget > 0 && (
+              <div className="mb-5">
+                <div className="flex justify-between text-xs text-text-muted mb-1.5">
+                  <span>Overall: {formatINR(stats.totalGoalSaved)} saved of {formatINR(stats.totalGoalTarget)}</span>
+                  <span className="font-mono">{((stats.totalGoalSaved / stats.totalGoalTarget) * 100).toFixed(0)}%</span>
+                </div>
+                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700 bg-gradient-violet"
+                    style={{ width: `${Math.min((stats.totalGoalSaved / stats.totalGoalTarget) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Individual goals */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              {stats.goals.slice(0, 4).map(goal => (
+                <div key={goal.name} className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
+                  <div className="relative flex-shrink-0">
+                    <GoalRing pct={goal.pct} color={goal.color} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] font-mono font-bold text-text-primary">{goal.pct.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                  <div className="min-w-0 flex-1 pt-1">
+                    <p className="text-text-primary text-sm font-medium truncate">{goal.name}</p>
+                    <p className="font-mono text-xs text-text-secondary mt-0.5">{formatINR(goal.saved)}</p>
+                    <p className="text-text-muted text-xs">of {formatINR(goal.target)}</p>
+                    {goal.deadline && (
+                      <p className="text-text-muted text-xs mt-1">
+                        Due {new Date(goal.deadline).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
