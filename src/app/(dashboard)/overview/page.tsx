@@ -106,7 +106,7 @@ function HealthGauge({ score }: { score: number }) {
   const label = score >= 75 ? "Excellent" : score >= 50 ? "Good" : "Needs Work";
 
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={strokeW} />
         <circle
@@ -117,9 +117,9 @@ function HealthGauge({ score }: { score: number }) {
           style={{ transition: "stroke-dasharray 1s ease" }}
         />
       </svg>
-      <div className="text-center -mt-[74px]">
-        <p className="font-mono font-bold text-3xl text-text-primary">{score}</p>
-        <p className="text-xs font-medium mt-0.5" style={{ color }}>{label}</p>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <p className="font-mono font-bold text-3xl text-text-primary leading-none">{score}</p>
+        <p className="text-xs font-medium mt-1" style={{ color }}>{label}</p>
       </div>
     </div>
   );
