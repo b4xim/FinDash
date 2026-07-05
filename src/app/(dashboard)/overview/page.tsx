@@ -485,21 +485,21 @@ export default function OverviewPage() {
                   {/* Two summary tiles */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-surface-overlay rounded-xl p-3 flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-rose-400/10 flex items-center justify-center flex-shrink-0">
-                        <ArrowUpRight size={14} className="text-rose-400" />
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                        <ArrowUpRight size={14} className="text-emerald-400" />
                       </div>
                       <div>
                         <p className="text-text-muted text-xs font-medium uppercase tracking-wider">You&apos;re Owed</p>
-                        <p className="font-mono font-semibold text-rose-400 text-base mt-0.5">{formatINR(lentOut)}</p>
+                        <p className="font-mono font-semibold text-emerald-400 text-base mt-0.5">{formatINR(lentOut)}</p>
                       </div>
                     </div>
                     <div className="bg-surface-overlay rounded-xl p-3 flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                        <ArrowDownLeft size={14} className="text-emerald-400" />
+                      <div className="w-8 h-8 rounded-lg bg-rose-400/10 flex items-center justify-center flex-shrink-0">
+                        <ArrowDownLeft size={14} className="text-rose-400" />
                       </div>
                       <div>
                         <p className="text-text-muted text-xs font-medium uppercase tracking-wider">You Owe</p>
-                        <p className="font-mono font-semibold text-emerald-400 text-base mt-0.5">{formatINR(borrowedIn)}</p>
+                        <p className="font-mono font-semibold text-rose-400 text-base mt-0.5">{formatINR(borrowedIn)}</p>
                       </div>
                     </div>
                   </div>
@@ -513,13 +513,13 @@ export default function OverviewPage() {
                       return (
                         <div key={e.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-white/5 transition-colors">
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isLent ? "bg-rose-400" : "bg-emerald-400"}`} />
+                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isLent ? "bg-emerald-400" : "bg-rose-400"}`} />
                             <span className="text-text-primary text-sm font-medium truncate">{e.person}</span>
-                            <span className={`text-xs px-1.5 py-0.5 rounded-md flex-shrink-0 ${isLent ? "bg-rose-400/10 text-rose-400" : "bg-emerald-500/10 text-emerald-400"}`}>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-md flex-shrink-0 ${isLent ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-400/10 text-rose-400"}`}>
                               {isLent ? "owes you" : "you owe"}
                             </span>
                           </div>
-                          <span className={`font-mono text-sm font-semibold flex-shrink-0 ml-2 ${isLent ? "text-rose-400" : "text-emerald-400"}`}>
+                          <span className={`font-mono text-sm font-semibold flex-shrink-0 ml-2 ${isLent ? "text-emerald-400" : "text-rose-400"}`}>
                             {formatINR(outstanding)}
                           </span>
                         </div>
