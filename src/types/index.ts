@@ -187,3 +187,21 @@ export interface SmartPick {
   };
 }
 
+// ── Lending Tracker (money lent to / borrowed from people) ──
+
+export type LendingDirection = "lent" | "borrowed";
+export type LendingStatus = "pending" | "partially_settled" | "settled";
+
+export interface LendingEntry {
+  id: string;
+  person: string;            // Name of the person
+  direction: LendingDirection; // "lent" = you gave money, "borrowed" = you received money
+  amount: number;            // Original amount
+  settled_amount: number;    // How much has been settled so far
+  date: string;              // ISO date string when the lending happened
+  due_date?: string;         // Optional expected return date
+  status: LendingStatus;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
