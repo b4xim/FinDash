@@ -272,7 +272,7 @@ export default function OverviewPage() {
 
       <main className="flex-1 p-6 space-y-6 animate-fade-in">
 
-        {/* ── Budget alert banner ── */}
+        {/* ══ 🔴 ALERTS ══ */}
         {activeAlerts.length > 0 && (
           <div className="card p-4 border border-amber-400/20 bg-amber-400/5 flex items-start gap-3">
             <AlertTriangle size={18} className="text-amber-400 flex-shrink-0 mt-0.5" />
@@ -290,11 +290,11 @@ export default function OverviewPage() {
           </div>
         )}
 
-        {/* ── Top stat tiles ── */}
+        {/* ══ 📊 SECTION 1: SNAPSHOT ══ */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard label="Net Worth"           value={formatINR(stats.netWorth, true)}         change={null}                                                                                                                   icon={Wallet}       accent="bg-gradient-violet" />
-          <StatCard label="This Month's Spend"  value={formatINR(stats.thisMonth.spend, true)}  change={spendChange === 0 ? 0 : -spendChange}                                                                                   icon={TrendingDown}  accent="bg-rose-fin/20" />
-          <StatCard label="This Month's Income" value={formatINR(stats.thisMonth.income, true)} change={incomeChange}                                                                                                            icon={TrendingUp}    accent="bg-emerald-fin/20" />
+          <StatCard label="Net Worth"           value={formatINR(stats.netWorth, true)}         change={null} icon={Wallet} accent="bg-gradient-violet" />
+          <StatCard label="This Month's Spend"  value={formatINR(stats.thisMonth.spend, true)}  change={spendChange === 0 ? 0 : -spendChange} icon={TrendingDown} accent="bg-rose-fin/20" />
+          <StatCard label="This Month's Income" value={formatINR(stats.thisMonth.income, true)} change={incomeChange} icon={TrendingUp} accent="bg-emerald-fin/20" />
           <StatCard
             label="Investments"
             value={formatINR(stats.investmentsTotal, true)}
@@ -305,83 +305,9 @@ export default function OverviewPage() {
           />
         </div>
 
-        {/* ── Financial Health Score ── */}
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <p className="font-display font-semibold text-text-primary flex items-center gap-2">
-                <Heart size={16} className="text-rose-400" /> Financial Health Score
-              </p>
-              <p className="text-text-muted text-sm mt-0.5">Based on 6 key financial indicators</p>
-            </div>
-            <button
-              onClick={() => setHealthExpanded(v => !v)}
-              className="text-xs text-violet-light hover:underline flex items-center gap-1"
-            >
-              {healthExpanded ? "Less" : "Details"}
-              {healthExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            </button>
-          </div>
+        {/* ══ 📈 SECTION 2: TRENDS & FLOW ══ */}
 
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <HealthGauge score={stats.financialHealthScore} />
-            <div className="flex-1 w-full space-y-3">
-              {stats.healthBreakdown.map(item => (
-                <div key={item.label}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-text-secondary text-xs font-medium">{item.label}</span>
-                    <span className="text-xs font-mono" style={{ color: item.score >= item.maxScore * 0.7 ? "#10D98C" : item.score >= item.maxScore * 0.4 ? "#F59E0B" : "#F43F5E" }}>
-                      {item.score}/{item.maxScore}
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${(item.score / item.maxScore) * 100}%`,
-                        background: item.score >= item.maxScore * 0.7 ? "#10D98C" : item.score >= item.maxScore * 0.4 ? "#F59E0B" : "#F43F5E",
-                      }}
-                    />
-                  </div>
-                  {healthExpanded && (
-                    <p className="text-text-muted text-xs mt-1">{item.tip}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Credit Card Split-up ── */}
-        {creditCards.length > 0 && (
-          <div>
-            <h2 className="font-display font-semibold text-text-primary mb-3 flex items-center gap-2">
-              <CardIcon size={16} className="text-emerald-400" /> Credit Cards (This Cycle)
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {creditCards.map(card => (
-                <div key={card.account} className="card p-4 flex flex-col h-full border border-emerald-500/10 bg-emerald-500/5">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                      <CardIcon size={18} className="text-emerald-400" />
-                    </div>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <p className="font-display font-medium text-text-primary text-sm leading-snug break-words">
-                        {card.account}
-                      </p>
-                      {card.last4 && <p className="text-text-muted text-xs font-mono mt-1 opacity-70">•••• {card.last4}</p>}
-                    </div>
-                  </div>
-                  <div className="mt-auto pt-3 border-t border-emerald-500/10">
-                    <p className="font-mono font-semibold text-text-primary text-lg">{formatINR(card.thisCycleSpend)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Charts ── */}
+        {/* Charts — trend bar (2/3) + pie (1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 card p-6">
             <p className="font-display font-medium text-text-primary mb-1">Monthly Trend</p>
@@ -395,7 +321,7 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        {/* ── Cash Flow Breakdown ── */}
+        {/* Cash Flow Breakdown */}
         {stats.thisMonth.income > 0 && stats.cashFlowBreakdown.length > 0 && (
           <div className="card p-6">
             <div className="flex items-start justify-between mb-5 gap-2 flex-wrap">
@@ -409,8 +335,6 @@ export default function OverviewPage() {
                 Income: {formatINR(stats.thisMonth.income)}
               </span>
             </div>
-
-            {/* Stacked bar */}
             <div className="h-8 rounded-xl overflow-hidden flex mb-4 gap-0.5">
               {stats.cashFlowBreakdown.map(item => (
                 <div
@@ -425,8 +349,6 @@ export default function OverviewPage() {
                 />
               ))}
             </div>
-
-            {/* Legend */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {stats.cashFlowBreakdown.map(item => (
                 <div key={item.label} className="flex items-center gap-2">
@@ -441,13 +363,13 @@ export default function OverviewPage() {
           </div>
         )}
 
-        {/* ── Insight tiles ── */}
+        {/* Insights */}
         <div>
           <h2 className="font-display font-semibold text-text-primary mb-3 flex items-center gap-2">
             <Zap size={16} className="text-amber-400" /> Insights
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            {/* Savings sparkline tile */}
+            {/* Savings sparkline */}
             <div className="card p-5 flex flex-col gap-2 sm:col-span-2">
               <div className="flex items-center justify-between">
                 <div>
@@ -456,9 +378,7 @@ export default function OverviewPage() {
                     {savedThisMonth >= 0 ? "+" : ""}{formatINR(savedThisMonth)}
                   </p>
                   <p className="text-text-muted text-xs mt-0.5">
-                    {stats.savingsRate !== null
-                      ? `Savings rate: ${stats.savingsRate.toFixed(1)}%`
-                      : "No income recorded this month"}
+                    {stats.savingsRate !== null ? `Savings rate: ${stats.savingsRate.toFixed(1)}%` : "No income recorded this month"}
                   </p>
                 </div>
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${savedThisMonth >= 0 ? "bg-emerald-500/70" : "bg-rose-500/70"}`}>
@@ -478,404 +398,412 @@ export default function OverviewPage() {
                       <XAxis dataKey="month" hide />
                       <YAxis hide />
                       <RechartsTooltip content={<SavingsTooltip />} />
-                      <Area
-                        type="monotone"
-                        dataKey="savings"
-                        stroke="#10D98C"
-                        strokeWidth={2}
-                        fill="url(#savingsGrad)"
-                        dot={false}
-                      />
+                      <Area type="monotone" dataKey="savings" stroke="#10D98C" strokeWidth={2} fill="url(#savingsGrad)" dot={false} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               )}
             </div>
-
-            <InsightTile
-              icon={BarChart3}
-              iconClass="bg-violet/70"
-              label="Avg Daily Spend"
-              value={formatINR(stats.avgDailySpend)}
-              sub={`Projected: ${formatINR(stats.projectedMonthSpend)} this month`}
-            />
-            <InsightTile
-              icon={Trophy}
-              iconClass="bg-amber-500/70"
-              label="Biggest Expense"
-              value={stats.biggestExpense ? formatINR(stats.biggestExpense.amount) : "—"}
-              sub={stats.biggestExpense ? stats.biggestExpense.description : "No expenses yet"}
-            />
-            <InsightTile
-              icon={Calendar}
-              iconClass="bg-cyan-500/70"
-              label="Peak Spend Day"
-              value={stats.topSpendDay ?? "—"}
-              sub="Most spend happens on this day"
-            />
-            <InsightTile
-              icon={Landmark}
-              iconClass="bg-indigo-500/70"
-              label="Emergency Fund"
-              value={`${stats.emergencyMonths.toFixed(1)} mo`}
-              sub={stats.emergencyMonths >= 3 ? "Healthy buffer ✓" : "Aim for 3+ months"}
-            />
+            <InsightTile icon={BarChart3} iconClass="bg-violet/70" label="Avg Daily Spend" value={formatINR(stats.avgDailySpend)} sub={`Projected: ${formatINR(stats.projectedMonthSpend)} this month`} />
+            <InsightTile icon={Trophy}   iconClass="bg-amber-500/70" label="Biggest Expense" value={stats.biggestExpense ? formatINR(stats.biggestExpense.amount) : "—"} sub={stats.biggestExpense ? stats.biggestExpense.description : "No expenses yet"} />
+            <InsightTile icon={Calendar} iconClass="bg-cyan-500/70" label="Peak Spend Day"  value={stats.topSpendDay ?? "—"} sub="Most spend happens on this day" />
+            <InsightTile icon={Landmark} iconClass="bg-indigo-500/70" label="Emergency Fund" value={`${stats.emergencyMonths.toFixed(1)} mo`} sub={stats.emergencyMonths >= 3 ? "Healthy buffer ✓" : "Aim for 3+ months"} />
           </div>
         </div>
 
-        {/* ── Top 5 Transactions ── */}
-        {stats.topTransactions.length > 0 && (
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display font-semibold text-text-primary flex items-center gap-2">
-                <Receipt size={16} className="text-violet-light" /> Top Expenses This Month
-              </h2>
-              <Link href="/spending" className="text-xs text-violet-light hover:underline">View all →</Link>
-            </div>
-            <div className="space-y-2">
-              {stats.topTransactions.map((txn, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-surface-overlay hover:bg-white/5 transition-colors">
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CATEGORY_COLORS[txn.category] ?? "#4A5270" }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-text-primary text-sm font-medium truncate">{txn.description}</p>
-                    <p className="text-text-muted text-xs">{txn.category} · {new Date(txn.date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</p>
+        {/* ══ 💳 SECTION 3: OBLIGATIONS & COMMITMENTS ══ */}
+        {(stats.activeEmiCount > 0 || pendingLendings.length > 0) && (
+          <div>
+            <h2 className="font-display font-semibold text-text-primary mb-3 flex items-center gap-2">
+              <Scale size={16} className="text-pink-400" /> Obligations &amp; Lending
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+              {/* EMI */}
+              {stats.activeEmiCount > 0 && (
+                <div className="card p-6 flex flex-col gap-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-display font-semibold text-text-primary flex items-center gap-2">
+                        <CardIcon size={16} className="text-pink-400" /> EMI Obligations
+                      </p>
+                      <p className="text-text-muted text-sm mt-0.5">Fixed monthly outflows</p>
+                    </div>
+                    <Link href="/emi" className="text-xs text-violet-light hover:underline">Manage →</Link>
                   </div>
-                  <p className="font-mono font-semibold text-text-primary text-sm flex-shrink-0">{formatINR(txn.amount)}</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-surface-overlay rounded-xl p-3">
+                      <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Active</p>
+                      <p className="font-mono font-bold text-2xl mt-1 text-text-primary">{stats.activeEmiCount}</p>
+                      <p className="text-text-muted text-xs mt-0.5">loans</p>
+                    </div>
+                    <div className="bg-surface-overlay rounded-xl p-3">
+                      <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Monthly</p>
+                      <p className="font-mono font-bold text-xl mt-1 text-text-primary">{formatINR(stats.totalMonthlyEmi)}</p>
+                      <p className="text-text-muted text-xs mt-0.5">outflow</p>
+                    </div>
+                    <div className="bg-surface-overlay rounded-xl p-3">
+                      <p className="text-text-muted text-xs font-medium uppercase tracking-wider">% Income</p>
+                      <p className={`font-mono font-bold text-xl mt-1 ${stats.emiAsPctOfIncome > 30 ? "text-rose-400" : stats.emiAsPctOfIncome > 20 ? "text-amber-400" : "text-emerald-400"}`}>
+                        {stats.emiAsPctOfIncome.toFixed(1)}%
+                      </p>
+                      <p className="text-text-muted text-xs mt-0.5">{stats.emiAsPctOfIncome <= 30 ? "healthy" : "high"}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs text-text-muted mb-1.5">
+                      <span>EMI as % of monthly income</span>
+                      <span className="font-mono">{stats.emiAsPctOfIncome.toFixed(1)}% / 30%</span>
+                    </div>
+                    <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${Math.min(stats.emiAsPctOfIncome, 100)}%`,
+                          background: stats.emiAsPctOfIncome > 30 ? "linear-gradient(90deg,#f43f5e,#ef4444)" : "linear-gradient(90deg,#7C5CFC,#F472B6)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Lending */}
+              {pendingLendings.length > 0 && (
+                <div className="card p-6 flex flex-col gap-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-display font-semibold text-text-primary flex items-center gap-2">
+                        <HandCoins size={16} className="text-violet-light" /> Lending Overview
+                      </p>
+                      <p className="text-text-muted text-sm mt-0.5">Unsettled balances</p>
+                    </div>
+                    <Link href="/lending" className="text-xs text-violet-light hover:underline">View all →</Link>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-surface-overlay rounded-xl p-3 flex items-start gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-rose-400/10 flex items-center justify-center flex-shrink-0 mt-0.5"><ArrowUpRight size={14} className="text-rose-400" /></div>
+                      <div>
+                        <p className="text-text-muted text-xs font-medium uppercase tracking-wider">You&apos;re Owed</p>
+                        <p className="font-mono font-semibold text-rose-400 text-lg mt-0.5">{formatINR(lentOut)}</p>
+                      </div>
+                    </div>
+                    <div className="bg-surface-overlay rounded-xl p-3 flex items-start gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5"><ArrowDownLeft size={14} className="text-emerald-400" /></div>
+                      <div>
+                        <p className="text-text-muted text-xs font-medium uppercase tracking-wider">You Owe</p>
+                        <p className="font-mono font-semibold text-emerald-400 text-lg mt-0.5">{formatINR(borrowedIn)}</p>
+                      </div>
+                    </div>
+                    <div className="bg-surface-overlay rounded-xl p-3 flex items-start gap-2">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${lendingNet >= 0 ? "bg-emerald-500/10" : "bg-rose-400/10"}`}><Scale size={14} className={lendingNet >= 0 ? "text-emerald-400" : "text-rose-400"} /></div>
+                      <div>
+                        <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Net Balance</p>
+                        <p className={`font-mono font-semibold text-lg mt-0.5 ${lendingNet >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                          {lendingNet >= 0 ? "+" : "-"}{formatINR(Math.abs(lendingNet))}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-surface-overlay rounded-xl p-3 flex items-start gap-2">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${lendingOverdue > 0 ? "bg-amber-400/10" : "bg-white/5"}`}><AlertTriangle size={14} className={lendingOverdue > 0 ? "text-amber-400" : "text-text-muted"} /></div>
+                      <div>
+                        <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Overdue</p>
+                        <p className={`font-mono font-semibold text-lg mt-0.5 ${lendingOverdue > 0 ? "text-amber-400" : "text-text-primary"}`}>{lendingOverdue}</p>
+                        <p className="text-text-muted text-xs">{lendingOverdue > 0 ? "past due date" : "all on track"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        )}
+
+        {/* Credit Cards */}
+        {creditCards.length > 0 && (
+          <div>
+            <h2 className="font-display font-semibold text-text-primary mb-3 flex items-center gap-2">
+              <CardIcon size={16} className="text-emerald-400" /> Credit Cards (This Cycle)
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {creditCards.map(card => (
+                <div key={card.account} className="card p-4 flex flex-col h-full border border-emerald-500/10 bg-emerald-500/5">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                      <CardIcon size={18} className="text-emerald-400" />
+                    </div>
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <p className="font-display font-medium text-text-primary text-sm leading-snug break-words">{card.account}</p>
+                      {card.last4 && <p className="text-text-muted text-xs font-mono mt-1 opacity-70">&bull;&bull;&bull;&bull; {card.last4}</p>}
+                    </div>
+                  </div>
+                  <div className="mt-auto pt-3 border-t border-emerald-500/10">
+                    <p className="font-mono font-semibold text-text-primary text-lg">{formatINR(card.thisCycleSpend)}</p>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* ── Month-over-Month Category Changes ── */}
-        {stats.categoryComparison.length > 0 && (
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display font-semibold text-text-primary flex items-center gap-2">
-                <BarChart3 size={16} className="text-amber-400" /> Category Changes vs Last Month
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {stats.categoryComparison.slice(0, 6).map(c => {
-                const isIncrease = c.change > 0;
-                return (
-                  <div key={c.category} className="bg-surface-overlay rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ background: CATEGORY_COLORS[c.category] ?? "#4A5270" }} />
-                        <span className="text-text-primary text-sm font-medium">{c.category}</span>
-                      </div>
-                      <span className={`text-xs font-mono px-2 py-0.5 rounded-full flex items-center gap-0.5
-                        ${isIncrease ? "bg-rose-500/10 text-rose-400" : "bg-emerald-500/10 text-emerald-400"}`}>
-                        {isIncrease ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
-                        {Math.abs(c.changePct).toFixed(0)}%
-                      </span>
+        {/* ══ 🎯 SECTION 4: GOALS & BUDGETS ══ */}
+        {(stats.goals.length > 0 || (stats.budgetAlerts && stats.budgetAlerts.length > 0)) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* Goals */}
+            {stats.goals.length > 0 && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <p className="font-display font-semibold text-text-primary flex items-center gap-2">
+                      <Flag size={16} className="text-violet-light" /> Goals Progress
+                    </p>
+                    <p className="text-text-muted text-sm mt-0.5">Active financial goals</p>
+                  </div>
+                  <Link href="/goals" className="text-xs text-violet-light hover:underline">View all →</Link>
+                </div>
+                {stats.totalGoalTarget > 0 && (
+                  <div className="mb-4">
+                    <div className="flex justify-between text-xs text-text-muted mb-1.5">
+                      <span>Overall: {formatINR(stats.totalGoalSaved)} of {formatINR(stats.totalGoalTarget)}</span>
+                      <span className="font-mono">{((stats.totalGoalSaved / stats.totalGoalTarget) * 100).toFixed(0)}%</span>
                     </div>
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <p className="text-text-muted text-xs">This month</p>
-                        <p className="font-mono font-semibold text-text-primary text-sm">{formatINR(c.thisMonth)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-text-muted text-xs">Last month</p>
-                        <p className="font-mono text-text-secondary text-sm">{formatINR(c.lastMonth)}</p>
-                      </div>
+                    <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700 bg-gradient-violet" style={{ width: `${Math.min((stats.totalGoalSaved / stats.totalGoalTarget) * 100, 100)}%` }} />
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── Food & Dining spotlight ── */}
-        {(stats.foodSpendThisMonth > 0 || stats.foodTxnCount > 0) && (
-          <div className="card p-6">
-            <div className="flex items-start justify-between mb-5 gap-3 flex-wrap">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, #f97316 60%, #ef4444)" }}>
-                  <UtensilsCrossed size={18} className="text-[#FFFFFF]" />
-                </div>
-                <div>
-                  <p className="font-display font-medium text-text-primary">Food &amp; Dining</p>
-                  <p className="text-text-muted text-sm mt-0.5">Your top spend category this month</p>
-                </div>
-              </div>
-              <span className="text-xs px-3 py-1.5 rounded-full font-mono font-medium"
-                style={{
-                  background: stats.foodSpendPct > 40 ? "rgba(239,68,68,0.12)" : stats.foodSpendPct > 25 ? "rgba(251,191,36,0.12)" : "rgba(16,185,129,0.12)",
-                  color:      stats.foodSpendPct > 40 ? "#f43f5e"               : stats.foodSpendPct > 25 ? "#f59e0b"               : "#10b981",
-                  border:     `1px solid ${stats.foodSpendPct > 40 ? "rgba(239,68,68,0.25)" : stats.foodSpendPct > 25 ? "rgba(251,191,36,0.25)" : "rgba(16,185,129,0.25)"}`,
-                }}
-              >
-                {stats.foodSpendPct.toFixed(1)}% of spend
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-              <div className="bg-surface-overlay rounded-xl p-4">
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Avg Daily</p>
-                <p className="font-mono font-bold text-2xl mt-1" style={{ color: "#f97316" }}>
-                  {formatINR(stats.avgDailyFoodSpend)}
-                </p>
-                <p className="text-text-muted text-xs mt-1">per day so far this month</p>
-              </div>
-              <div className="bg-surface-overlay rounded-xl p-4">
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">This Month</p>
-                <p className="font-mono font-bold text-2xl mt-1 text-text-primary">
-                  {formatINR(stats.foodSpendThisMonth)}
-                </p>
-                <p className="text-text-muted text-xs mt-1">
-                  across {stats.foodTxnCount} transaction{stats.foodTxnCount !== 1 ? "s" : ""}
-                </p>
-              </div>
-              <div className="bg-surface-overlay rounded-xl p-4">
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Projected</p>
-                <p className="font-mono font-bold text-2xl mt-1 text-text-primary">
-                  {formatINR(stats.avgDailyFoodSpend * new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate())}
-                </p>
-                <p className="text-text-muted text-xs mt-1">by end of month</p>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs text-text-muted mb-1.5">
-                <span>Food &amp; Dining share of total spend</span>
-                <span className="font-mono">{stats.foodSpendPct.toFixed(1)}%</span>
-              </div>
-              <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${Math.min(stats.foodSpendPct, 100)}%`,
-                    background: stats.foodSpendPct > 40
-                      ? "linear-gradient(90deg,#f97316,#ef4444)"
-                      : stats.foodSpendPct > 25
-                      ? "linear-gradient(90deg,#f97316,#f59e0b)"
-                      : "linear-gradient(90deg,#f97316,#10b981)",
-                  }}
-                />
-              </div>
-              <p className="text-text-muted text-xs mt-2 text-right">
-                {stats.foodSpendPct > 40
-                  ? "⚠️ High food share — consider meal prepping to cut costs"
-                  : stats.foodSpendPct > 25
-                  ? "💡 Moderate — you're spending a notable chunk on food"
-                  : "✅ Well-balanced food spend"}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* ── EMI Obligations ── */}
-        {stats.activeEmiCount > 0 && (
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <p className="font-display font-semibold text-text-primary flex items-center gap-2">
-                  <CardIcon size={16} className="text-pink-400" /> EMI Obligations
-                </p>
-                <p className="text-text-muted text-sm mt-0.5">Fixed monthly outflows this month</p>
-              </div>
-              <Link href="/emi" className="text-xs text-violet-light hover:underline">Manage →</Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-              <div className="bg-surface-overlay rounded-xl p-4">
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Active EMIs</p>
-                <p className="font-mono font-bold text-2xl mt-1 text-text-primary">{stats.activeEmiCount}</p>
-                <p className="text-text-muted text-xs mt-1">loans running</p>
-              </div>
-              <div className="bg-surface-overlay rounded-xl p-4">
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Monthly Total</p>
-                <p className="font-mono font-bold text-2xl mt-1 text-text-primary">{formatINR(stats.totalMonthlyEmi)}</p>
-                <p className="text-text-muted text-xs mt-1">per month outflow</p>
-              </div>
-              <div className="bg-surface-overlay rounded-xl p-4">
-                <p className="text-text-muted text-xs font-medium uppercase tracking-wider">% of Income</p>
-                <p className={`font-mono font-bold text-2xl mt-1 ${stats.emiAsPctOfIncome > 30 ? "text-rose-400" : stats.emiAsPctOfIncome > 20 ? "text-amber-400" : "text-emerald-400"}`}>
-                  {stats.emiAsPctOfIncome.toFixed(1)}%
-                </p>
-                <p className="text-text-muted text-xs mt-1">{stats.emiAsPctOfIncome <= 30 ? "within healthy range" : "consider reducing debt"}</p>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs text-text-muted mb-1.5">
-                <span>EMI as % of monthly income</span>
-                <span className="font-mono">{stats.emiAsPctOfIncome.toFixed(1)}% / 30% threshold</span>
-              </div>
-              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${Math.min(stats.emiAsPctOfIncome, 100)}%`,
-                    background: stats.emiAsPctOfIncome > 30
-                      ? "linear-gradient(90deg,#f43f5e,#ef4444)"
-                      : "linear-gradient(90deg,#7C5CFC,#F472B6)",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Goals Progress Snapshot ── */}
-        {stats.goals.length > 0 && (
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <p className="font-display font-semibold text-text-primary flex items-center gap-2">
-                  <Flag size={16} className="text-violet-light" /> Goals Progress
-                </p>
-                <p className="text-text-muted text-sm mt-0.5">Active financial goals</p>
-              </div>
-              <Link href="/goals" className="text-xs text-violet-light hover:underline">View all →</Link>
-            </div>
-
-            {/* Overall progress bar */}
-            {stats.totalGoalTarget > 0 && (
-              <div className="mb-5">
-                <div className="flex justify-between text-xs text-text-muted mb-1.5">
-                  <span>Overall: {formatINR(stats.totalGoalSaved)} saved of {formatINR(stats.totalGoalTarget)}</span>
-                  <span className="font-mono">{((stats.totalGoalSaved / stats.totalGoalTarget) * 100).toFixed(0)}%</span>
-                </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700 bg-gradient-violet"
-                    style={{ width: `${Math.min((stats.totalGoalSaved / stats.totalGoalTarget) * 100, 100)}%` }}
-                  />
+                )}
+                <div className="space-y-3">
+                  {stats.goals.slice(0, 4).map(goal => (
+                    <div key={goal.name} className="flex items-center gap-3 bg-surface-overlay rounded-xl p-3">
+                      <div className="relative flex-shrink-0">
+                        <GoalRing pct={goal.pct} color={goal.color} />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-[10px] font-mono font-bold text-text-primary">{goal.pct.toFixed(0)}%</span>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-text-primary text-sm font-medium truncate">{goal.name}</p>
+                        <p className="text-text-muted text-xs">{formatINR(goal.saved)} of {formatINR(goal.target)}</p>
+                      </div>
+                      {goal.deadline && (
+                        <p className="text-text-muted text-xs flex-shrink-0">
+                          {new Date(goal.deadline).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* Individual goals */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              {stats.goals.slice(0, 4).map(goal => (
-                <div key={goal.name} className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
-                  <div className="relative flex-shrink-0">
-                    <GoalRing pct={goal.pct} color={goal.color} />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[10px] font-mono font-bold text-text-primary">{goal.pct.toFixed(0)}%</span>
-                    </div>
+            {/* Budget Progress */}
+            {stats.budgetAlerts && stats.budgetAlerts.length > 0 && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <p className="font-display font-semibold text-text-primary flex items-center gap-2">
+                      <Target size={16} className="text-violet-light" /> Budget Progress
+                    </p>
+                    <p className="text-text-muted text-sm mt-0.5">Monthly category limits</p>
                   </div>
-                  <div className="min-w-0 flex-1 pt-1">
-                    <p className="text-text-primary text-sm font-medium truncate">{goal.name}</p>
-                    <p className="font-mono text-xs text-text-secondary mt-0.5">{formatINR(goal.saved)}</p>
-                    <p className="text-text-muted text-xs">of {formatINR(goal.target)}</p>
-                    {goal.deadline && (
-                      <p className="text-text-muted text-xs mt-1">
-                        Due {new Date(goal.deadline).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
-                      </p>
-                    )}
-                  </div>
+                  <Link href="/budget" className="text-xs text-violet-light hover:underline">View all →</Link>
                 </div>
-              ))}
-            </div>
+                <div className="space-y-3">
+                  {stats.budgetAlerts.slice(0, 6).map(bl => {
+                    const clampedPct = Math.min(bl.pct, 100);
+                    const barColor   = bl.pct >= 100 ? "bg-rose-500" : bl.pct >= bl.alertAt ? "bg-amber-400" : "bg-emerald-400";
+                    return (
+                      <div key={bl.category}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-text-primary text-sm">{bl.category}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-text-muted text-xs font-mono">{formatINR(bl.spent)} / {formatINR(bl.limit)}</span>
+                            <span className={`text-xs font-mono ${bl.pct >= 100 ? "text-rose-400" : bl.pct >= bl.alertAt ? "text-amber-400" : "text-text-muted"}`}>{bl.pct.toFixed(0)}%</span>
+                          </div>
+                        </div>
+                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${clampedPct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
-        {/* ── Budget progress (if limits set) ── */}
-        {stats.budgetAlerts && stats.budgetAlerts.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-display font-semibold text-text-primary flex items-center gap-2">
-                <Target size={16} className="text-violet-light" /> Budget Progress
-              </h2>
-              <Link href="/budget" className="text-xs text-violet-light hover:underline">View all →</Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {stats.budgetAlerts.slice(0, 6).map(bl => {
-                const clampedPct = Math.min(bl.pct, 100);
-                const barColor   = bl.pct >= 100 ? "bg-rose-500" : bl.pct >= bl.alertAt ? "bg-amber-400" : "bg-emerald-400";
-                return (
-                  <div key={bl.category} className="card p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-text-primary text-sm font-medium">{bl.category}</span>
-                      <span className={`text-xs font-mono ${bl.pct >= 100 ? "text-rose-400" : bl.pct >= bl.alertAt ? "text-amber-400" : "text-text-muted"}`}>
-                        {bl.pct.toFixed(0)}%
-                      </span>
+        {/* ══ 📋 SECTION 5: DEEP DIVES ══ */}
+
+        {/* Top expenses + Category changes — side by side */}
+        {(stats.topTransactions.length > 0 || stats.categoryComparison.length > 0) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {stats.topTransactions.length > 0 && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display font-semibold text-text-primary flex items-center gap-2">
+                    <Receipt size={16} className="text-violet-light" /> Top Expenses This Month
+                  </h2>
+                  <Link href="/spending" className="text-xs text-violet-light hover:underline">View all →</Link>
+                </div>
+                <div className="space-y-2">
+                  {stats.topTransactions.map((txn, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-surface-overlay hover:bg-white/5 transition-colors">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CATEGORY_COLORS[txn.category] ?? "#4A5270" }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-text-primary text-sm font-medium truncate">{txn.description}</p>
+                        <p className="text-text-muted text-xs">{txn.category} · {new Date(txn.date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</p>
+                      </div>
+                      <p className="font-mono font-semibold text-text-primary text-sm flex-shrink-0">{formatINR(txn.amount)}</p>
                     </div>
-                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${clampedPct}%` }} />
-                    </div>
-                    <div className="flex justify-between text-xs text-text-muted mt-1.5">
-                      <span>{formatINR(bl.spent)}</span>
-                      <span>{formatINR(bl.limit)}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {stats.categoryComparison.length > 0 && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display font-semibold text-text-primary flex items-center gap-2">
+                    <BarChart3 size={16} className="text-amber-400" /> Category Changes vs Last Month
+                  </h2>
+                </div>
+                <div className="space-y-2">
+                  {stats.categoryComparison.slice(0, 5).map(c => {
+                    const isIncrease = c.change > 0;
+                    return (
+                      <div key={c.category} className="flex items-center gap-3 p-3 rounded-xl bg-surface-overlay">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CATEGORY_COLORS[c.category] ?? "#4A5270" }} />
+                          <span className="text-text-primary text-sm font-medium truncate">{c.category}</span>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-mono text-sm text-text-primary">{formatINR(c.thisMonth)}</p>
+                          <p className="text-text-muted text-xs">{formatINR(c.lastMonth)}</p>
+                        </div>
+                        <span className={`text-xs font-mono px-2 py-0.5 rounded-full flex items-center gap-0.5 flex-shrink-0 ${
+                          isIncrease ? "bg-rose-500/10 text-rose-400" : "bg-emerald-500/10 text-emerald-400"
+                        }`}>
+                          {isIncrease ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                          {Math.abs(c.changePct).toFixed(0)}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
-        {/* ── Lending Overview ── */}
-        {pendingLendings.length > 0 && (
+        {/* Financial Health + Food & Dining — side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* Financial Health Score */}
           <div className="card p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <p className="font-display font-semibold text-text-primary flex items-center gap-2">
-                  <HandCoins size={16} className="text-violet-light" /> Lending Overview
+                  <Heart size={16} className="text-rose-400" /> Financial Health Score
                 </p>
-                <p className="text-text-muted text-sm mt-0.5">Money lent &amp; borrowed — unsettled balances</p>
+                <p className="text-text-muted text-sm mt-0.5">Based on 6 key financial indicators</p>
               </div>
-              <Link href="/lending" className="text-xs text-violet-light hover:underline">View all →</Link>
+              <button onClick={() => setHealthExpanded(v => !v)} className="text-xs text-violet-light hover:underline flex items-center gap-1">
+                {healthExpanded ? "Less" : "Details"}
+                {healthExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              </button>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {/* You're Owed */}
-              <div className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-rose-400/10 flex items-center justify-center flex-shrink-0">
-                  <ArrowUpRight size={16} className="text-rose-400" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">You&apos;re Owed</p>
-                  <p className="font-mono font-semibold text-rose-400 text-lg mt-0.5">{formatINR(lentOut)}</p>
-                </div>
-              </div>
-
-              {/* You Owe */}
-              <div className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                  <ArrowDownLeft size={16} className="text-emerald-400" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">You Owe</p>
-                  <p className="font-mono font-semibold text-emerald-400 text-lg mt-0.5">{formatINR(borrowedIn)}</p>
-                </div>
-              </div>
-
-              {/* Net Balance */}
-              <div className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${lendingNet >= 0 ? "bg-emerald-500/10" : "bg-rose-400/10"}`}>
-                  <Scale size={16} className={lendingNet >= 0 ? "text-emerald-400" : "text-rose-400"} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Net Balance</p>
-                  <p className={`font-mono font-semibold text-lg mt-0.5 ${lendingNet >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                    {lendingNet >= 0 ? "+" : "-"}{formatINR(Math.abs(lendingNet))}
-                  </p>
-                </div>
-              </div>
-
-              {/* Overdue */}
-              <div className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${lendingOverdue > 0 ? "bg-amber-400/10" : "bg-white/5"}`}>
-                  <AlertTriangle size={16} className={lendingOverdue > 0 ? "text-amber-400" : "text-text-muted"} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Overdue</p>
-                  <p className={`font-mono font-semibold text-lg mt-0.5 ${lendingOverdue > 0 ? "text-amber-400" : "text-text-primary"}`}>{lendingOverdue}</p>
-                  <p className="text-text-muted text-xs mt-0.5">{lendingOverdue > 0 ? "past due date" : "all on track"}</p>
-                </div>
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <HealthGauge score={stats.financialHealthScore} />
+              <div className="flex-1 w-full space-y-3">
+                {stats.healthBreakdown.map(item => (
+                  <div key={item.label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-text-secondary text-xs font-medium">{item.label}</span>
+                      <span className="text-xs font-mono" style={{ color: item.score >= item.maxScore * 0.7 ? "#10D98C" : item.score >= item.maxScore * 0.4 ? "#F59E0B" : "#F43F5E" }}>
+                        {item.score}/{item.maxScore}
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${(item.score / item.maxScore) * 100}%`,
+                          background: item.score >= item.maxScore * 0.7 ? "#10D98C" : item.score >= item.maxScore * 0.4 ? "#F59E0B" : "#F43F5E",
+                        }}
+                      />
+                    </div>
+                    {healthExpanded && <p className="text-text-muted text-xs mt-1">{item.tip}</p>}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        )}
 
-        {/* ── Necessary vs Unnecessary ── */}
+          {/* Food & Dining Spotlight */}
+          {(stats.foodSpendThisMonth > 0 || stats.foodTxnCount > 0) ? (
+            <div className="card p-6">
+              <div className="flex items-start justify-between mb-5 gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #f97316 60%, #ef4444)" }}>
+                    <UtensilsCrossed size={18} className="text-[#FFFFFF]" />
+                  </div>
+                  <div>
+                    <p className="font-display font-medium text-text-primary">Food &amp; Dining</p>
+                    <p className="text-text-muted text-sm mt-0.5">Spotlight this month</p>
+                  </div>
+                </div>
+                <span className="text-xs px-3 py-1.5 rounded-full font-mono font-medium" style={{
+                  background: stats.foodSpendPct > 40 ? "rgba(239,68,68,0.12)" : stats.foodSpendPct > 25 ? "rgba(251,191,36,0.12)" : "rgba(16,185,129,0.12)",
+                  color:      stats.foodSpendPct > 40 ? "#f43f5e" : stats.foodSpendPct > 25 ? "#f59e0b" : "#10b981",
+                  border:     `1px solid ${stats.foodSpendPct > 40 ? "rgba(239,68,68,0.25)" : stats.foodSpendPct > 25 ? "rgba(251,191,36,0.25)" : "rgba(16,185,129,0.25)"}`,
+                }}>{stats.foodSpendPct.toFixed(1)}% of spend</span>
+              </div>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="bg-surface-overlay rounded-xl p-3">
+                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Avg Daily</p>
+                  <p className="font-mono font-bold text-xl mt-1" style={{ color: "#f97316" }}>{formatINR(stats.avgDailyFoodSpend)}</p>
+                </div>
+                <div className="bg-surface-overlay rounded-xl p-3">
+                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">This Month</p>
+                  <p className="font-mono font-bold text-xl mt-1 text-text-primary">{formatINR(stats.foodSpendThisMonth)}</p>
+                  <p className="text-text-muted text-xs">{stats.foodTxnCount} txns</p>
+                </div>
+                <div className="bg-surface-overlay rounded-xl p-3">
+                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Projected</p>
+                  <p className="font-mono font-bold text-xl mt-1 text-text-primary">{formatINR(stats.avgDailyFoodSpend * new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate())}</p>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs text-text-muted mb-1.5">
+                  <span>Food share of total spend</span>
+                  <span className="font-mono">{stats.foodSpendPct.toFixed(1)}%</span>
+                </div>
+                <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-700" style={{
+                    width: `${Math.min(stats.foodSpendPct, 100)}%`,
+                    background: stats.foodSpendPct > 40 ? "linear-gradient(90deg,#f97316,#ef4444)" : stats.foodSpendPct > 25 ? "linear-gradient(90deg,#f97316,#f59e0b)" : "linear-gradient(90deg,#f97316,#10b981)",
+                  }} />
+                </div>
+                <p className="text-text-muted text-xs mt-2 text-right">
+                  {stats.foodSpendPct > 40 ? "⚠️ High food share — consider meal prepping" : stats.foodSpendPct > 25 ? "💡 Moderate food spend" : "✅ Well-balanced food spend"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="card p-6 flex items-center justify-center text-text-muted">
+              <p className="text-sm">No food spend recorded this month.</p>
+            </div>
+          )}
+
+        </div>
+
+        {/* Necessary vs Unnecessary */}
         <div className="card p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -883,12 +811,9 @@ export default function OverviewPage() {
               <p className="text-text-muted text-sm mt-0.5">This month · based on your Sheets tags</p>
             </div>
             {!hasNecsData && (
-              <span className="text-xs text-amber-400 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20">
-                Sync Sheets to see data
-              </span>
+              <span className="text-xs text-amber-400 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20">Sync Sheets to see data</span>
             )}
           </div>
-
           {hasNecsData ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
@@ -941,7 +866,7 @@ export default function OverviewPage() {
           )}
         </div>
 
-        {/* Getting started */}
+        {/* ══ 🆕 ONBOARDING ══ */}
         {!hasAnyData && (
           <div className="card p-6 border-violet/20 bg-violet/5">
             <div className="flex items-start gap-4">
@@ -957,7 +882,9 @@ export default function OverviewPage() {
             </div>
           </div>
         )}
+
       </main>
     </>
   );
 }
+
