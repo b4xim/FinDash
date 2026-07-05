@@ -18,9 +18,11 @@ import {
   Zap, Calendar, Trophy, BarChart3, AlertTriangle, Target, UtensilsCrossed,
   CreditCard as CardIcon, Loader2, Heart, Banknote, ChevronDown, ChevronUp,
   Receipt, TrendingDown as TrendDown, Landmark, Flag, Star,
+  HandCoins, ArrowDownLeft, Scale,
 } from "lucide-react";
 import { formatINR, pctChange, CATEGORY_COLORS } from "@/lib/utils";
 import Link from "next/link";
+import { LendingEntry } from "@/types";
 import {
   AreaChart, Area, ResponsiveContainer, Tooltip as RechartsTooltip,
   XAxis, YAxis,
@@ -203,16 +205,19 @@ interface CardGroup {
 export default function OverviewPage() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [creditCards, setCreditCards] = useState<CardGroup[]>([]);
+  const [lendings, setLendings] = useState<LendingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [healthExpanded, setHealthExpanded] = useState(false);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/stats").then(res => res.json()),
-      fetch("/api/credit-cards").then(res => res.json())
-    ]).then(([statsData, ccData]) => {
+      fetch("/api/credit-cards").then(res => res.json()),
+      fetch("/api/lendings").then(res => res.json()).catch(() => []),
+    ]).then(([statsData, ccData, lendingData]) => {
       setStats(statsData);
       setCreditCards(ccData.cards || []);
+      setLendings(Array.isArray(lendingData) ? lendingData : []);
       setLoading(false);
     });
   }, []);
@@ -253,6 +258,13 @@ export default function OverviewPage() {
 
   // Cash flow total for % calc
   const cfTotal = stats.cashFlowBreakdown.reduce((s, c) => s + c.amount, 0);
+
+  // Lending overview stats
+  const pendingLendings = lendings.filter(e => e.status !== "settled");
+  const lentOut         = pendingLendings.filter(e => e.direction === "lent").reduce((s, e) => s + (Number(e.amount) - Number(e.settled_amount)), 0);
+  const borrowedIn      = pendingLendings.filter(e => e.direction === "borrowed").reduce((s, e) => s + (Number(e.amount) - Number(e.settled_amount)), 0);
+  const lendingNet      = lentOut - borrowedIn;
+  const lendingOverdue  = pendingLendings.filter(e => e.due_date && new Date(e.due_date) < new Date()).length;
 
   return (
     <>
@@ -795,6 +807,70 @@ export default function OverviewPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Lending Overview ── */}
+        {pendingLendings.length > 0 && (
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <p className="font-display font-semibold text-text-primary flex items-center gap-2">
+                  <HandCoins size={16} className="text-violet-light" /> Lending Overview
+                </p>
+                <p className="text-text-muted text-sm mt-0.5">Money lent &amp; borrowed — unsettled balances</p>
+              </div>
+              <Link href="/lending" className="text-xs text-violet-light hover:underline">View all →</Link>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {/* You're Owed */}
+              <div className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-rose-400/10 flex items-center justify-center flex-shrink-0">
+                  <ArrowUpRight size={16} className="text-rose-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">You&apos;re Owed</p>
+                  <p className="font-mono font-semibold text-rose-400 text-lg mt-0.5">{formatINR(lentOut)}</p>
+                </div>
+              </div>
+
+              {/* You Owe */}
+              <div className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                  <ArrowDownLeft size={16} className="text-emerald-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">You Owe</p>
+                  <p className="font-mono font-semibold text-emerald-400 text-lg mt-0.5">{formatINR(borrowedIn)}</p>
+                </div>
+              </div>
+
+              {/* Net Balance */}
+              <div className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${lendingNet >= 0 ? "bg-emerald-500/10" : "bg-rose-400/10"}`}>
+                  <Scale size={16} className={lendingNet >= 0 ? "text-emerald-400" : "text-rose-400"} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Net Balance</p>
+                  <p className={`font-mono font-semibold text-lg mt-0.5 ${lendingNet >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    {lendingNet >= 0 ? "+" : "-"}{formatINR(Math.abs(lendingNet))}
+                  </p>
+                </div>
+              </div>
+
+              {/* Overdue */}
+              <div className="bg-surface-overlay rounded-xl p-4 flex items-start gap-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${lendingOverdue > 0 ? "bg-amber-400/10" : "bg-white/5"}`}>
+                  <AlertTriangle size={16} className={lendingOverdue > 0 ? "text-amber-400" : "text-text-muted"} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-text-muted text-xs font-medium uppercase tracking-wider">Overdue</p>
+                  <p className={`font-mono font-semibold text-lg mt-0.5 ${lendingOverdue > 0 ? "text-amber-400" : "text-text-primary"}`}>{lendingOverdue}</p>
+                  <p className="text-text-muted text-xs mt-0.5">{lendingOverdue > 0 ? "past due date" : "all on track"}</p>
+                </div>
+              </div>
             </div>
           </div>
         )}
