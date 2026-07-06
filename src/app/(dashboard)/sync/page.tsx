@@ -46,6 +46,7 @@ export default function SyncPage() {
 
   // ── Sheets state ─────────────────────────────────────────
   const [sheetsStatus, setSheetsStatus]   = useState<SheetsStatus | null>(null);
+  const [sheetsLoading, setSheetsLoading] = useState(true);
   const [sheetsSyncing, setSheetsSyncing] = useState(false);
   const [sheetsResult, setSheetsResult]   = useState<SyncResult | null>(null);
   const [sheetsError, setSheetsError]     = useState<string | null>(null);
@@ -57,8 +58,10 @@ export default function SyncPage() {
   }, []);
 
   const fetchSheetsStatus = useCallback(async () => {
+    setSheetsLoading(true);
     const res = await fetch("/api/sheets-sync");
     setSheetsStatus(await res.json());
+    setSheetsLoading(false);
   }, []);
 
   const fetchPending = useCallback(async () => {
@@ -147,7 +150,19 @@ export default function SyncPage() {
           </h2>
 
           <div className="card p-6">
-            {sheetsStatus?.configured ? (
+            {sheetsLoading ? (
+              /* Loading skeleton */
+              <div className="flex flex-wrap items-center justify-between gap-4 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-surface-elevated rounded-xl flex-shrink-0" />
+                  <div className="space-y-2">
+                    <div className="h-3.5 w-36 bg-surface-elevated rounded" />
+                    <div className="h-3 w-24 bg-surface-elevated rounded" />
+                  </div>
+                </div>
+                <div className="h-9 w-32 bg-surface-elevated rounded-xl" />
+              </div>
+            ) : sheetsStatus?.configured ? (
               /* Configured */
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
