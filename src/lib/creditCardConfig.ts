@@ -27,10 +27,13 @@ export const CREDIT_CARD_CONFIGS: CreditCardUIConfig[] = [
     imagePath:      "/card-images/icici-amazon-pay.png",
     subjectKeyword: "Amazon Pay ICICI",
     amountSource:   "email",
-    // Matches: ₹12,345 due on 15 Jul
-    totalRegex:     /₹([\d,]+\.?\d*)\s*\ndue on\s*(\d+\s+\w+)/,
-    dueDateRegex:   /due on\s*(\d+\s+\w+\s+\d{4})/i,
-    minDueRegex:    /Minimum due\s*₹([\d,]+\.?\d*)/i,
+    // ICICI Amazon Pay email format (as-observed):
+    //   "Total Amount Due:" label → next big td: &#8377;AMOUNT (64px font)
+    //   "Minimum Amount Due: ₹100.00" inline in the label td
+    //   "Payment due" label → next td: "by July 20, 2026"
+    totalRegex:     /Total Amount Due:[\s\S]*?&#[\d]+;([\d,]+\.?\d*)/i,
+    dueDateRegex:   /Payment due[\s\S]*?by\s+([A-Za-z]+ \d{1,2}, \d{4})/i,
+    minDueRegex:    /Minimum Amount Due:\s*₹([\d,]+\.?\d*)/i,
   },
 
   // ── 2. ICICI Coral Rupay ─────────────────────────────────
@@ -43,9 +46,13 @@ export const CREDIT_CARD_CONFIGS: CreditCardUIConfig[] = [
     subjectKeyword: "ICICI Bank Credit Card Statement",
     cardLast4:      "7009",  // Disambiguates from Amazon Pay (same sender)
     amountSource:   "email",
-    totalRegex:     /₹([\d,]+\.?\d*)\s*\ndue on\s*(\d+\s+\w+)/,
-    dueDateRegex:   /due on\s*(\d+\s+\w+\s+\d{4})/i,
-    minDueRegex:    /Minimum due\s*₹([\d,]+\.?\d*)/i,
+    // ICICI Coral Rupay uses the same email template as Amazon Pay:
+    //   "Total Amount Due:" label → big td with &#8377;AMOUNT
+    //   "Minimum Amount Due: ₹X.XX" inline
+    //   "Payment due" → "by Month DD, YYYY"
+    totalRegex:     /Total Amount Due:[\s\S]*?&#[\d]+;([\d,]+\.?\d*)/i,
+    dueDateRegex:   /Payment due[\s\S]*?by\s+([A-Za-z]+ \d{1,2}, \d{4})/i,
+    minDueRegex:    /Minimum Amount Due:\s*₹([\d,]+\.?\d*)/i,
   },
 
   // ── 3. Axis Privilege ────────────────────────────────────
@@ -57,10 +64,14 @@ export const CREDIT_CARD_CONFIGS: CreditCardUIConfig[] = [
     imagePath:      "/card-images/axis-privilege.png",
     subjectKeyword: "Privilege",
     amountSource:   "email",
-    // Matches the pink HTML table format
-    totalRegex:     /Total\s*Amount\s*Due\s*INR[\s\S]*?([\d,]+\.?\d*)\s*Dr/i,
+    // The Axis HTML table has all headers in row 1, all data in row 2.
+    // Linear order: "Total Amount Due" header → "Minimum Amount Due" header
+    //               → "Payment Due Date" header → 987.06 Dr → 366 Dr → date
+    // totalRegex: first number-Dr after "Total Amount Due" = correct total
+    // minDueRegex: must skip the first Dr amount (total=987.06) to reach minimum (366)
+    totalRegex:     /Total\s*Amount\s*Due[\s\S]*?([\d,]+\.?\d*)\s*Dr/i,
     dueDateRegex:   /Payment\s*Due\s*Date[\s\S]*?(\d{2}\/\d{2}\/\d{4})/i,
-    minDueRegex:    /Minimum\s*Amount\s*Due[\s\S]*?([\d,]+\.?\d*)\s*Dr/i,
+    minDueRegex:    /Minimum\s*Amount\s*Due[\s\S]*?[\d,]+\.?\d*\s*Dr[\s\S]*?([\d,]+\.?\d*)\s*Dr/i,
   },
 
   // ── 4. Axis IndianOil Rupay ──────────────────────────────
@@ -72,9 +83,9 @@ export const CREDIT_CARD_CONFIGS: CreditCardUIConfig[] = [
     imagePath:      "/card-images/axis-indianoil-rupay.png",
     subjectKeyword: "Indianoil",
     amountSource:   "email",
-    totalRegex:     /Total\s*Amount\s*Due\s*INR[\s\S]*?([\d,]+\.?\d*)\s*Dr/i,
+    totalRegex:     /Total\s*Amount\s*Due[\s\S]*?([\d,]+\.?\d*)\s*Dr/i,
     dueDateRegex:   /Payment\s*Due\s*Date[\s\S]*?(\d{2}\/\d{2}\/\d{4})/i,
-    minDueRegex:    /Minimum\s*Amount\s*Due[\s\S]*?([\d,]+\.?\d*)\s*Dr/i,
+    minDueRegex:    /Minimum\s*Amount\s*Due[\s\S]*?[\d,]+\.?\d*\s*Dr[\s\S]*?([\d,]+\.?\d*)\s*Dr/i,
   },
 
   // ── 5. SBI Cashback ──────────────────────────────────────
@@ -86,9 +97,14 @@ export const CREDIT_CARD_CONFIGS: CreditCardUIConfig[] = [
     imagePath:      "/card-images/sbi-cashback.png",
     subjectKeyword: "CASHBACK SBI",
     amountSource:   "email",
-    totalRegex:     /Total amount due\s*\(\s*\)\s*([\d,]+\.?\d*)/i,
-    dueDateRegex:   /Payment due date\s*([\d]+-\w+-\d{4})/i,
-    minDueRegex:    /Minimum amount due\s*\(\s*\)\s*([\d,]+\.?\d*)/i,
+    // SBI email: table with headers in row 1, values in row 2 (no "Dr" suffix)
+    // | Total amount due (₹) | Minimum amount due (₹) | Payment due date |
+    // |       33,382.00       |        668.00         |   10-Jul-2026    |
+    // totalRegex: first bare number after the header
+    // minDueRegex: skip first number (total) to reach second (minimum)
+    totalRegex:     /Total amount due[\s\S]*?([\d,]+\.?\d*)/i,
+    dueDateRegex:   /Payment due date[\s\S]*?(\d{1,2}-[A-Za-z]+-\d{4})/i,
+    minDueRegex:    /Minimum amount due[\s\S]*?[\d,]+\.?\d*[\s\S]*?([\d,]+\.?\d*)/i,
   },
 
   // ── 6. Federal Bank Signet ───────────────────────────────
