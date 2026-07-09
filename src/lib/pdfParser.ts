@@ -52,14 +52,14 @@ export async function decryptPdf(encryptedBuffer: Buffer, password: string): Pro
   }
 }
 
-// ── Extract text from a (decrypted) PDF ──────────────────────
+// ── Extract text from a password-protected PDF ────────────────
 /**
  * Uses pdf-parse (PDFParse class API) to extract text from a PDF buffer.
- * The buffer must be decrypted before passing here.
+ * It natively handles decryption via pdfjs-dist if the password is provided.
  */
-export async function extractPdfText(buffer: Buffer): Promise<string> {
+export async function extractPdfText(buffer: Buffer, password?: string): Promise<string> {
   try {
-    const parser = new PDFParse({ data: buffer });
+    const parser = new PDFParse({ data: buffer, password });
     const result = await parser.getText();
     await parser.destroy();
     return result.text ?? "";
@@ -129,11 +129,8 @@ export async function parsePdfStatement(
   password: string,
   config: CreditCardUIConfig
 ): Promise<ParsedBillData> {
-  // Step 1: Decrypt
-  const decryptedBuffer = await decryptPdf(encryptedBuffer, password);
-
-  // Step 2: Extract text
-  const text = await extractPdfText(decryptedBuffer);
+  // Step 1 & 2: Decrypt and extract text simultaneously using pdf-parse
+  const text = await extractPdfText(encryptedBuffer, password);
 
   // Step 3: Apply regex patterns
   const totalMatch   = config.totalRegex.exec(text);

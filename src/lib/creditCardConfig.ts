@@ -114,10 +114,10 @@ export const CREDIT_CARD_CONFIGS: CreditCardUIConfig[] = [
     imagePath:      "/card-images/federal-bank-signet.png",
     subjectKeyword: "Credit Card Statement",
     amountSource:   "pdf",
-    // PDF generic patterns — Federal Bank statement PDFs vary; these cover common layouts
-    totalRegex:     /Total\s*Amount\s*Due\s*[:\s]*(?:INR|Rs\.?)?\s*([\d,]+\.?\d*)/i,
-    dueDateRegex:   /(?:Payment\s*Due\s*Date|Due\s*Date)\s*[:\s]*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}|\d{1,2}\s+\w+\s+\d{4})/i,
-    minDueRegex:    /Minimum\s*(?:Amount\s*)?Due\s*[:\s]*(?:INR|Rs\.?)?\s*([\d,]+\.?\d*)/i,
+    // PDF generic patterns — pdf-parse sometimes extracts ₹ as 'C' or 'Rs.'
+    totalRegex:     /Total\s*Amount\s*Due\s*[:\s]*(?:INR|Rs\.?|C)?\s*([\d,]+\.?\d*)/i,
+    dueDateRegex:   /(?:Payment\s*Due\s*Date|Due\s*Date)\s*[:\s]*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}|\d{1,2}\s+\w+\,?\s+\d{4})/i,
+    minDueRegex:    /Minimum\s*(?:Amount\s*)?Due\s*[:\s]*(?:INR|Rs\.?|C)?\s*([\d,]+\.?\d*)/i,
   },
 
   // ── 7. TATA NEU HDFC Plus Rupay ─────────────────────────
@@ -130,9 +130,9 @@ export const CREDIT_CARD_CONFIGS: CreditCardUIConfig[] = [
     subjectKeyword:     "Tata Neu Plus",
     amountSource:       "pdf",
     pdfFilenamePattern: /^6529/,          // HDFC filenames start with 6529
-    totalRegex:         /Total\s*Amount\s*Due\s*[:\s]*(?:INR|Rs\.?)?\s*([\d,]+\.?\d*)/i,
-    dueDateRegex:       /(?:Payment\s*Due\s*Date|Due\s*Date)\s*[:\s]*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}|\d{1,2}\s+\w+\s+\d{4})/i,
-    minDueRegex:        /Minimum\s*(?:Amount\s*)?Due\s*[:\s]*(?:INR|Rs\.?)?\s*([\d,]+\.?\d*)/i,
+    totalRegex:         /Total\s*Amount\s*Due\s*[:\s]*(?:INR|Rs\.?|C)?\s*([\d,]+\.?\d*)/i,
+    dueDateRegex:       /(?:Payment\s*Due\s*Date|Due\s*Date)\s*[:\s]*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}|\d{1,2}\s+\w+\,?\s+\d{4})/i,
+    minDueRegex:        /Minimum\s*(?:Amount\s*)?Due\s*[:\s]*(?:INR|Rs\.?|C)?\s*([\d,]+\.?\d*)/i,
   },
 ];
 
