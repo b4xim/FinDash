@@ -86,10 +86,18 @@ export interface UpsertBillInput {
 export async function upsertBill(bill: UpsertBillInput): Promise<CreditCardBill> {
   const supabase = getSupabaseAdmin();
 
+  // Check existing to preserve 'Paid' status
+  const { data: existing } = await supabase
+    .from("credit_card_bills")
+    .select("status")
+    .eq("card_name", bill.card_name)
+    .eq("statement_month", bill.statement_month)
+    .maybeSingle();
+
   const payload = {
     ...bill,
     last_fetched_at: bill.last_fetched_at ?? new Date().toISOString(),
-    status: bill.status ?? "Unpaid",
+    status: existing?.status === "Paid" ? "Paid" : (bill.status ?? "Unpaid"),
   };
 
   const { data, error } = await supabase

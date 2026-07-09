@@ -5,7 +5,7 @@
 // credit_card_config table — NOT here.
 // ============================================================
 
-import { CreditCardUIConfig } from "@/types";
+import { CreditCardUIConfig, CreditCardStatus } from "@/types";
 
 // Bank brand colors — used for card bottom borders and fallback icon bg
 export const BANK_COLORS: Record<string, string> = {
@@ -144,7 +144,8 @@ export function getCardConfig(cardName: string): CreditCardUIConfig | undefined 
 }
 
 /** Calculate urgency level for a due date */
-export function getDueUrgency(dueDateStr: string | null): "overdue" | "urgent" | "warning" | "ok" {
+export function getDueUrgency(dueDateStr: string | null, status?: CreditCardStatus): "paid" | "overdue" | "urgent" | "warning" | "ok" {
+  if (status === "Paid") return "paid";
   if (!dueDateStr) return "ok";
   const due = new Date(dueDateStr);
   const now = new Date();
@@ -165,6 +166,7 @@ export function getUrgencyClasses(urgency: ReturnType<typeof getDueUrgency>): {
   border: string;
 } {
   switch (urgency) {
+    case "paid":    return { text: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30" };
     case "overdue": return { text: "text-rose-400",  bg: "bg-rose-400/10",  border: "border-rose-400/30" };
     case "urgent":  return { text: "text-rose-400",  bg: "bg-rose-400/10",  border: "border-rose-400/30" };
     case "warning": return { text: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/30" };
@@ -173,7 +175,8 @@ export function getUrgencyClasses(urgency: ReturnType<typeof getDueUrgency>): {
 }
 
 /** Format days left as a human-readable string */
-export function formatDaysLeft(dueDateStr: string | null): string {
+export function formatDaysLeft(dueDateStr: string | null, status?: CreditCardStatus): string {
+  if (status === "Paid") return "Paid";
   if (!dueDateStr) return "—";
   const due = new Date(dueDateStr);
   const now = new Date();

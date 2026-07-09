@@ -22,7 +22,7 @@ import { CreditCardBill } from "@/types";
 // ── Mini card for each credit card ───────────────────────────
 function MiniCard({ bill }: { bill: CreditCardBill }) {
   const config = getCardConfig(bill.card_name);
-  const urgency = getDueUrgency(bill.due_date);
+  const urgency = getDueUrgency(bill.due_date, bill.status);
   const urgencyClasses = getUrgencyClasses(urgency);
   const bankColor = config?.bankColor ?? "#4A5270";
 
@@ -64,7 +64,7 @@ function MiniCard({ bill }: { bill: CreditCardBill }) {
 
       {/* Due date */}
       <div className={`text-[10px] font-mono px-2 py-0.5 rounded-full self-start ${urgencyClasses.text} ${urgencyClasses.bg}`}>
-        {bill.due_date
+        {bill.status === "Paid" ? "Paid" : bill.due_date
           ? new Date(bill.due_date + "T00:00:00").toLocaleDateString("en-IN", {
               day: "numeric",
               month: "short",

@@ -194,9 +194,9 @@ function CreditCardSummaryCard({
   onStatusChange: (id: string, status: CreditCardStatus) => void;
 }) {
   const config = getCardConfig(bill.card_name);
-  const urgency = getDueUrgency(bill.due_date);
+  const urgency = getDueUrgency(bill.due_date, bill.status);
   const urgencyClasses = getUrgencyClasses(urgency);
-  const daysLeft = formatDaysLeft(bill.due_date);
+  const daysLeft = formatDaysLeft(bill.due_date, bill.status);
   const bankColor = config?.bankColor ?? "#4A5270";
 
   return (
@@ -329,7 +329,7 @@ function BillsTable({
           </thead>
           <tbody>
             {sorted.map(bill => {
-              const urgency = getDueUrgency(bill.due_date);
+              const urgency = getDueUrgency(bill.due_date, bill.status);
               const urgencyClasses = getUrgencyClasses(urgency);
               const config = getCardConfig(bill.card_name);
               const bankColor = config?.bankColor ?? "#4A5270";
@@ -386,7 +386,7 @@ function BillsTable({
                   {/* Days Left */}
                   <td className="table-cell">
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${urgencyClasses.bg} ${urgencyClasses.text}`}>
-                      {formatDaysLeft(bill.due_date)}
+                      {formatDaysLeft(bill.due_date, bill.status)}
                     </span>
                   </td>
 
