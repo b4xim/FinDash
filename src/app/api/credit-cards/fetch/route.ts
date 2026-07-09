@@ -19,7 +19,6 @@ import {
   getMessageDetail,
   extractHtmlBody,
   downloadAttachment,
-  getHeader,
 } from "@/lib/gmail";
 import { CREDIT_CARD_CONFIGS, getCurrentStatementMonth } from "@/lib/creditCardConfig";
 import { getAllCardConfigs, upsertBill, autoMarkOverdue } from "@/lib/creditCardQueries";
@@ -238,7 +237,20 @@ export async function POST() {
   }
 
   // Load DB configs (includes pdf_password — never logged or returned to client)
-  const dbConfigs = await getAllCardConfigs();
+  let dbConfigs: CreditCardConfig[];
+  try {
+    dbConfigs = await getAllCardConfigs();
+  } catch (err) {
+    console.error("Failed to load credit_card_config from DB:", err);
+    return NextResponse.json(
+      {
+        error:
+          "Could not read credit_card_config table. Have you run the Supabase migration? " +
+          (err instanceof Error ? err.message : String(err)),
+      },
+      { status: 500 }
+    );
+  }
   const dbConfigByName = Object.fromEntries(dbConfigs.map(c => [c.card_name, c]));
 
   // Run all 7 cards in parallel via Promise.allSettled

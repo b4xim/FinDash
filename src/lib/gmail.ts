@@ -192,26 +192,36 @@ export function getHeader(payload: GmailMessageDetail["payload"], name: string):
 // ── NEW: Extract raw HTML body (for credit-card statement parsing) ──
 // Unlike extractBodyText(), this does NOT strip HTML tags.
 // Needed for Axis Bank / SBI statements where the regex targets HTML table structure.
+// IMPORTANT: Bank emails nest deeply — multipart/mixed → multipart/alternative → text/html.
+// This function recurses into nested parts to find the HTML body.
 export function extractHtmlBody(payload: GmailMessageDetail["payload"]): string {
-  // Simple body (no parts)
+  // Recursive helper — searches parts tree depth-first for HTML, then plain text
+  function findBody(parts: GmailMessageDetail["payload"]["parts"]): { html: string | null; plain: string | null } {
+    let html: string | null = null;
+    let plain: string | null = null;
+
+    for (const part of parts ?? []) {
+      if (part.mimeType === "text/html" && (part as any).body?.data) {
+        html = Buffer.from((part as any).body.data, "base64").toString("utf-8");
+      } else if (part.mimeType === "text/plain" && (part as any).body?.data) {
+        plain = Buffer.from((part as any).body.data, "base64").toString("utf-8");
+      } else if (part.mimeType?.startsWith("multipart/") && (part as any).parts) {
+        // Recurse into nested multipart containers
+        const nested = findBody((part as any).parts);
+        if (nested.html) html = nested.html;
+        if (!plain && nested.plain) plain = nested.plain;
+      }
+    }
+    return { html, plain };
+  }
+
+  // Simple body (no parts) — e.g. a plain text-only email
   if (payload.body?.data) {
     return Buffer.from(payload.body.data, "base64").toString("utf-8");
   }
 
-  if (payload.parts) {
-    // Prefer text/html for credit card statement parsing (tables)
-    const htmlPart = payload.parts.find(p => p.mimeType === "text/html");
-    if (htmlPart?.body?.data) {
-      return Buffer.from(htmlPart.body.data, "base64").toString("utf-8");
-    }
-    // Fall back to plain text if no HTML
-    const plainPart = payload.parts.find(p => p.mimeType === "text/plain");
-    if (plainPart?.body?.data) {
-      return Buffer.from(plainPart.body.data, "base64").toString("utf-8");
-    }
-  }
-
-  return "";
+  const { html, plain } = findBody(payload.parts);
+  return html ?? plain ?? "";
 }
 
 // ── NEW: Download a Gmail message attachment by attachmentId ──
