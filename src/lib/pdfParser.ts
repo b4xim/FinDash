@@ -99,11 +99,9 @@ function parseDateToISO(dateStr: string | undefined): string | null {
     }
   }
 
-  // Try native Date parse as a last resort
-  const d = new Date(s);
-  if (!isNaN(d.getTime())) {
-    return d.toISOString().split("T")[0];
-  }
+  // Native Date parse as last resort (prevent timezone shifting by treating as UTC)
+  const d = new Date(s + " UTC");
+  if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
 
   return null;
 }
