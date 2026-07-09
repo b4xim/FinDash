@@ -166,7 +166,7 @@ export function getUrgencyClasses(urgency: ReturnType<typeof getDueUrgency>): {
   border: string;
 } {
   switch (urgency) {
-    case "paid":    return { text: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30" };
+    case "paid":    return { text: "text-emerald-fin", bg: "bg-emerald-fin-dim", border: "border-emerald-fin/30" };
     case "overdue": return { text: "text-rose-400",  bg: "bg-rose-400/10",  border: "border-rose-400/30" };
     case "urgent":  return { text: "text-rose-400",  bg: "bg-rose-400/10",  border: "border-rose-400/30" };
     case "warning": return { text: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/30" };

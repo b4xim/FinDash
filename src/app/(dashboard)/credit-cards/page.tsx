@@ -229,21 +229,28 @@ function CreditCardSummaryCard({
         )}
       </div>
 
-      {/* Due date */}
-      <div className={`flex items-center justify-between rounded-lg px-3 py-2 ${urgencyClasses.bg} border ${urgencyClasses.border}`}>
-        <div>
-          <p className="text-text-muted text-[10px] uppercase tracking-wider">Due Date</p>
-          <p className={`font-mono text-sm font-semibold ${urgencyClasses.text}`}>
-            {bill.due_date
-              ? new Date(bill.due_date + "T00:00:00").toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                })
-              : "—"}
-          </p>
+      {/* Due date / Paid status */}
+      {bill.status === "Paid" ? (
+        <div className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 bg-emerald-fin-dim border border-emerald-fin/30">
+          <CheckCircle2 size={16} className="text-emerald-fin" />
+          <span className="font-mono text-sm font-semibold text-emerald-fin uppercase tracking-wider">Statement Paid</span>
         </div>
-        <span className={`text-xs font-medium ${urgencyClasses.text}`}>{daysLeft}</span>
-      </div>
+      ) : (
+        <div className={`flex items-center justify-between rounded-lg px-3 py-2 ${urgencyClasses.bg} border ${urgencyClasses.border}`}>
+          <div>
+            <p className="text-text-muted text-[10px] uppercase tracking-wider">Due Date</p>
+            <p className={`font-mono text-sm font-semibold ${urgencyClasses.text}`}>
+              {bill.due_date
+                ? new Date(bill.due_date + "T00:00:00").toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                  })
+                : "—"}
+            </p>
+          </div>
+          <span className={`text-xs font-medium ${urgencyClasses.text}`}>{daysLeft}</span>
+        </div>
+      )}
     </div>
   );
 }
