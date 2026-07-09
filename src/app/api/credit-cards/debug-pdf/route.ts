@@ -114,28 +114,32 @@ export async function GET(req: NextRequest) {
        });
     }
     
-    // Dynamic import to test fetchPdfCard from the actual fetch route logic
-    const { parsePdfStatement } = await import("@/lib/pdfParser");
-    let fetchResult = null;
-    let fetchError = null;
-    try {
-      fetchResult = await parsePdfStatement(encryptedBuffer, dbConfig.pdf_password, config);
-    } catch (e) {
-      fetchError = e instanceof Error ? e.message : String(e);
-    }
+    // Find targeted snippets around key phrases
+    const findContext = (text: string, phrase: string, chars = 300): string => {
+      const idx = text.toLowerCase().indexOf(phrase.toLowerCase());
+      if (idx === -1) return `[phrase "${phrase}" NOT FOUND in PDF]`;
+      return text.slice(Math.max(0, idx - 50), idx + chars);
+    };
+
+    const totalMatch   = config.totalRegex.exec(rawText);
+    const minDueMatch  = config.minDueRegex.exec(rawText);
+    const dueDateMatch = config.dueDateRegex.exec(rawText);
 
     return NextResponse.json({
       cardName,
       query,
       messageId: messages[0].id,
       textLength: rawText.length,
-      fetchResult,
-      fetchError,
       snippets: {
-        aroundTotalAmountDue: '' /*findContext(rawText, "Total Amount Due"),
+        aroundTotalAmountDue: findContext(rawText, "Total Amount Due"),
         aroundMinimumDue:     findContext(rawText, "Minimum"),
-        aroundPaymentDue:     '' /*findContext(rawText, "Due Date"),*/
-      }
+        aroundPaymentDue:     findContext(rawText, "Due Date"),
+      },
+      regexResults: {
+        totalRegex:   totalMatch   ? { matched: true,  capture: totalMatch[1]   } : { matched: false },
+        minDueRegex:  minDueMatch  ? { matched: true,  capture: minDueMatch[1]  } : { matched: false },
+        dueDateRegex: dueDateMatch ? { matched: true,  capture: dueDateMatch[1] } : { matched: false },
+      },
     });
   } catch (err) {
     console.error("debug-pdf error:", err);
