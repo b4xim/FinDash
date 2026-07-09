@@ -7,6 +7,9 @@ const nextConfig = {
   // Mark all three as external so Next.js loads them natively via require().
   experimental: {
     serverComponentsExternalPackages: ["pdf-parse", "pdf-lib", "pdfjs-dist"],
+    outputFileTracingIncludes: {
+      "/api/**/*": ["./node_modules/pdf-parse/**/*", "./node_modules/pdfjs-dist/**/*"],
+    },
   },
 };
 
