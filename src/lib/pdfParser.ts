@@ -61,10 +61,12 @@ export async function extractPdfText(buffer: Buffer, password?: string): Promise
     // Polyfill DOMMatrix for Vercel Node 18/20 environments
     // We do this inside the function to avoid ES module import hoisting!
     if (typeof globalThis !== "undefined" && !(globalThis as any).DOMMatrix) {
-      (globalThis as any).DOMMatrix = require("dommatrix");
+      const dm = require("dommatrix");
+      (globalThis as any).DOMMatrix = dm.default || dm;
     }
     if (typeof global !== "undefined" && !(global as any).DOMMatrix) {
-      (global as any).DOMMatrix = require("dommatrix");
+      const dm = require("dommatrix");
+      (global as any).DOMMatrix = dm.default || dm;
     }
 
     // Dynamically require pdf-parse AFTER polyfilling
