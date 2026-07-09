@@ -116,10 +116,12 @@ export default function SpendingPage() {
 
         {/* Top row: charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 card p-6">
+          <div className="lg:col-span-2 card p-6 flex flex-col">
             <p className="font-display font-medium text-text-primary mb-1">Monthly Trend</p>
-            <p className="text-text-muted text-sm mb-2">Spending vs Income · last 6 months</p>
-            <TrendBarChart data={trendData} />
+            <p className="text-text-muted text-sm mb-4">Spending vs Income · last 6 months</p>
+            <div className="flex-1 min-h-[220px]">
+              <TrendBarChart data={trendData} />
+            </div>
           </div>
 
           <div className="card p-6">
