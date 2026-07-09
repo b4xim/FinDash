@@ -16,6 +16,12 @@
 // ============================================================
 
 import { PDFDocument } from "pdf-lib";
+
+// Polyfill DOMMatrix for Vercel Node 18/20 environments (pdfjs-dist requires it)
+if (typeof global !== "undefined" && typeof global.DOMMatrix === "undefined") {
+  global.DOMMatrix = require("dommatrix");
+}
+
 import { PDFParse } from "pdf-parse";
 import { CreditCardUIConfig } from "@/types";
 
