@@ -22,7 +22,8 @@ import {
 } from "@/lib/gmail";
 import { CREDIT_CARD_CONFIGS, getCurrentStatementMonth } from "@/lib/creditCardConfig";
 import { getAllCardConfigs, upsertBill, autoMarkOverdue } from "@/lib/creditCardQueries";
-import { parsePdfStatement } from "@/lib/pdfParser";
+// pdfParser is imported dynamically inside fetchPdfCard to avoid
+// pdfjs-dist crashing the route module at startup in the Next.js server environment.
 import { CreditCardUIConfig, CreditCardConfig } from "@/types";
 
 // ── Result type for a single card fetch ──────────────────────
@@ -205,6 +206,8 @@ async function fetchPdfCard(
     pdfAttachment.attachmentId
   );
 
+  // Dynamic import: avoids pdfjs-dist crashing the route module at load time
+  const { parsePdfStatement } = await import("@/lib/pdfParser");
   const parsed = await parsePdfStatement(encryptedBuffer, dbConfig.pdf_password, config);
 
   if (parsed.totalAmountDue === null && !parsed.dueDate) {
