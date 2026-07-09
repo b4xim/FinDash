@@ -42,9 +42,9 @@ const getCachedStatsData = unstable_cache(
       goalsRes,
       ...trendResults
     ] = await Promise.all([
-      supabase.from("transactions").select("amount, type, category, necessary, date, description").gte("date", thisMonthStart).lte("date", thisMonthEnd),
+      supabase.from("transactions").select("amount, type, category, necessary, date, description, account").gte("date", thisMonthStart).lte("date", thisMonthEnd),
       // Now also select category for month-over-month comparison
-      supabase.from("transactions").select("amount, type, category").gte("date", lastMonthStart).lte("date", lastMonthEnd),
+      supabase.from("transactions").select("amount, type, category, account").gte("date", lastMonthStart).lte("date", lastMonthEnd),
       supabase.from("holdings").select("units, current_price, buy_price"),
       supabase.from("transactions").select("amount, type, category"),
       supabase.from("budget_limits").select("*"),
@@ -269,6 +269,20 @@ export async function GET() {
     { label: "Remaining",     amount: remaining,                   color: "#38BDF8" },
   ].filter(item => item.amount > 0);
 
+  // ── Credit Card Spends (from transactions 'account' column) ──
+  const creditCardSpends = Object.entries(
+    thisMonthDebits.reduce((acc: Record<string, number>, t) => {
+      // Assuming accounts that aren't "Cash" or generic bank accounts might be credit cards
+      // Or we just return all non-cash accounts that have spend
+      if (t.account && t.account.toLowerCase() !== "cash") {
+        acc[t.account] = (acc[t.account] || 0) + Number(t.amount);
+      }
+      return acc;
+    }, {})
+  ).map(([account, spend]) => ({ account, spend }))
+  .sort((a, b) => b.spend - a.spend)
+  .slice(0, 6); // Top 6 cards
+
   // ── Financial health score ──
   // 1. Savings rate (25 pts): >= 20% = full, linear below
   const savingsScore = savingsRate !== null
@@ -363,6 +377,7 @@ export async function GET() {
     cashFlowBreakdown,
     topTransactions,
     categoryComparison,
+    creditCardSpends,
     financialHealthScore,
     healthBreakdown,
   });

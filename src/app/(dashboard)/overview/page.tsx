@@ -191,6 +191,7 @@ interface StatsResponse {
   cashFlowBreakdown:   CashFlowItem[];
   topTransactions:     TopTxn[];
   categoryComparison:  CategoryDiff[];
+  creditCardSpends:    { account: string; spend: number }[];
   financialHealthScore: number;
   healthBreakdown:     HealthItem[];
 }
@@ -300,10 +301,12 @@ export default function OverviewPage() {
 
         {/* Charts — trend bar (2/3) + pie (1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 card p-6">
+          <div className="lg:col-span-2 card p-6 flex flex-col">
             <p className="font-display font-medium text-text-primary mb-1">Monthly Trend</p>
-            <p className="text-text-muted text-sm mb-2">Spending vs Income · last 6 months</p>
-            <TrendBarChart data={stats.trendData} />
+            <p className="text-text-muted text-sm mb-4">Spending vs Income · last 6 months</p>
+            <div className="flex-1 min-h-[220px]">
+              <TrendBarChart data={stats.trendData} />
+            </div>
           </div>
           <div className="card p-6">
             <p className="font-display font-medium text-text-primary mb-1">Top Categories</p>
@@ -526,6 +529,30 @@ export default function OverviewPage() {
 
         {/* ══ 💳 CREDIT CARDS QUICK VIEW ══ */}
         <CreditCardQuickView />
+
+        {/* ── Credit Card Spends This Month ── */}
+        {stats.creditCardSpends && stats.creditCardSpends.length > 0 && (
+          <div>
+            <h2 className="font-display font-semibold text-text-primary mb-3 flex items-center gap-2">
+              <CardIcon size={16} className="text-emerald-400" /> Credit Card Spends (This Month)
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {stats.creditCardSpends.map(card => (
+                <div key={card.account} className="card p-4 flex flex-col justify-between border border-emerald-500/10 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors">
+                  <div className="mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center mb-2">
+                      <CardIcon size={14} className="text-emerald-400" />
+                    </div>
+                    <p className="font-display font-medium text-text-primary text-xs leading-snug line-clamp-2" title={card.account}>
+                      {card.account}
+                    </p>
+                  </div>
+                  <p className="font-mono font-semibold text-text-primary">{formatINR(card.spend)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ══ 🎯 SECTION 4: GOALS & BUDGETS ══ */}
         {(stats.goals.length > 0 || (stats.budgetAlerts && stats.budgetAlerts.length > 0)) && (

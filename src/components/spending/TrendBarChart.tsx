@@ -44,7 +44,7 @@ export default function TrendBarChart({ data }: TrendBarChartProps) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
+    <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} barGap={4} barCategoryGap="30%">
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
         <XAxis
