@@ -1,15 +1,19 @@
 // ============================================================
 // GET /api/credit-cards
-// Groups transactions by `account` (where account name contains
-// "Card") and returns per-card totals for the current cycle
-// (calendar month, simplified — most cards roughly track this)
-// plus the transaction list per card.
+//
+// Default (no params): Groups transactions by `account` containing
+// "Card" and returns per-card totals for the current cycle.
+//
+// ?source=bills: Returns per-card billing data from the new
+// credit_card_bills table (fetched from Gmail statements).
+// Used by the Credit Cards page and Overview Quick View.
 // ============================================================
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { requireAuth } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { getLatestBillsPerCard } from "@/lib/creditCardQueries";
 
 const getCachedCreditCardTxns = unstable_cache(
   async () => {
@@ -27,10 +31,27 @@ const getCachedCreditCardTxns = unstable_cache(
   { tags: ["transactions"] }
 );
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await requireAuth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const source = req.nextUrl.searchParams.get("source");
+
+  // ── New bills-based data source ───────────────────────────
+  if (source === "bills") {
+    try {
+      const bills = await getLatestBillsPerCard();
+      return NextResponse.json({ bills });
+    } catch (err) {
+      console.error("GET /api/credit-cards?source=bills error:", err);
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "Failed to fetch bills" },
+        { status: 500 }
+      );
+    }
+  }
+
+  // ── Existing transaction-based logic (default) ────────────
   let transactions;
   try {
     transactions = await getCachedCreditCardTxns();

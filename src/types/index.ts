@@ -205,3 +205,46 @@ export interface LendingEntry {
   created_at: string;
   updated_at: string;
 }
+
+// ── Credit Cards ──────────────────────────────────────────────
+
+export type CreditCardStatus = "Unpaid" | "Paid" | "Overdue";
+
+// One row per card per statement month in the credit_card_bills table
+export interface CreditCardBill {
+  id: string;
+  card_name: string;
+  sender_email: string | null;
+  total_amount_due: number;
+  minimum_due: number;
+  due_date: string | null;        // ISO date string e.g. "2026-07-15"
+  statement_month: string;        // e.g. "Jul 2026"
+  status: CreditCardStatus;
+  last_fetched_at: string;        // ISO timestamp
+  created_at: string;
+}
+
+// Static per-card config read from credit_card_config Supabase table
+export interface CreditCardConfig {
+  card_name: string;
+  pdf_password: string | null;    // Only set for PDF-based cards
+  sender_email: string;
+  created_at: string;
+}
+
+// UI-layer config (lives in /lib/creditCardConfig.ts as a static object)
+// Merged with CreditCardBill at render time
+export interface CreditCardUIConfig {
+  cardName: string;
+  shortName: string;              // Short display name e.g. "Amazon Pay"
+  bankName: string;               // Bank name e.g. "ICICI", "Axis"
+  bankColor: string;              // Hex color for bank branding
+  imagePath: string;              // Path in /public/card-images/
+  subjectKeyword: string;         // Gmail subject filter
+  cardLast4?: string;             // For disambiguation (ICICI Coral = "7009")
+  amountSource: "email" | "pdf";
+  totalRegex: RegExp;
+  dueDateRegex: RegExp;
+  minDueRegex: RegExp;
+  pdfFilenamePattern?: RegExp;    // For HDFC filename matching
+}

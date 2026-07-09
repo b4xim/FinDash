@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import TrendBarChart from "@/components/spending/TrendBarChart";
 import CategoryPieChart from "@/components/spending/CategoryPieChart";
+import CreditCardQuickView from "@/components/credit-cards/CreditCardQuickView";
 import {
   TrendingUp, TrendingDown, Wallet, PiggyBank,
   ArrowUpRight, ArrowDownRight, Minus,
@@ -194,17 +195,9 @@ interface StatsResponse {
   healthBreakdown:     HealthItem[];
 }
 
-interface CardGroup {
-  account: string;
-  last4: string | null;
-  thisCycleSpend: number;
-  totalSpend: number;
-}
-
 // ── Page ─────────────────────────────────────────────────────
 export default function OverviewPage() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
-  const [creditCards, setCreditCards] = useState<CardGroup[]>([]);
   const [lendings, setLendings] = useState<LendingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [healthExpanded, setHealthExpanded] = useState(false);
@@ -212,11 +205,9 @@ export default function OverviewPage() {
   useEffect(() => {
     Promise.all([
       fetch("/api/stats").then(res => res.json()),
-      fetch("/api/credit-cards").then(res => res.json()),
       fetch("/api/lendings").then(res => res.json()).catch(() => []),
-    ]).then(([statsData, ccData, lendingData]) => {
+    ]).then(([statsData, lendingData]) => {
       setStats(statsData);
-      setCreditCards(ccData.cards || []);
       setLendings(Array.isArray(lendingData) ? lendingData : []);
       setLoading(false);
     });
@@ -533,32 +524,8 @@ export default function OverviewPage() {
           </div>
         )}
 
-        {/* Credit Cards */}
-        {creditCards.length > 0 && (
-          <div>
-            <h2 className="font-display font-semibold text-text-primary mb-3 flex items-center gap-2">
-              <CardIcon size={16} className="text-emerald-400" /> Credit Cards (This Cycle)
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {creditCards.map(card => (
-                <div key={card.account} className="card p-4 flex flex-col h-full border border-emerald-500/10 bg-emerald-500/5">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                      <CardIcon size={18} className="text-emerald-400" />
-                    </div>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <p className="font-display font-medium text-text-primary text-sm leading-snug break-words">{card.account}</p>
-                      {card.last4 && <p className="text-text-muted text-xs font-mono mt-1 opacity-70">&bull;&bull;&bull;&bull; {card.last4}</p>}
-                    </div>
-                  </div>
-                  <div className="mt-auto pt-3 border-t border-emerald-500/10">
-                    <p className="font-mono font-semibold text-text-primary text-lg">{formatINR(card.thisCycleSpend)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* ══ 💳 CREDIT CARDS QUICK VIEW ══ */}
+        <CreditCardQuickView />
 
         {/* ══ 🎯 SECTION 4: GOALS & BUDGETS ══ */}
         {(stats.goals.length > 0 || (stats.budgetAlerts && stats.budgetAlerts.length > 0)) && (

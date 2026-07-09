@@ -188,3 +188,76 @@ export function extractBodyText(payload: GmailMessageDetail["payload"]): string 
 export function getHeader(payload: GmailMessageDetail["payload"], name: string): string {
   return payload.headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || "";
 }
+
+// ── NEW: Extract raw HTML body (for credit-card statement parsing) ──
+// Unlike extractBodyText(), this does NOT strip HTML tags.
+// Needed for Axis Bank / SBI statements where the regex targets HTML table structure.
+export function extractHtmlBody(payload: GmailMessageDetail["payload"]): string {
+  // Simple body (no parts)
+  if (payload.body?.data) {
+    return Buffer.from(payload.body.data, "base64").toString("utf-8");
+  }
+
+  if (payload.parts) {
+    // Prefer text/html for credit card statement parsing (tables)
+    const htmlPart = payload.parts.find(p => p.mimeType === "text/html");
+    if (htmlPart?.body?.data) {
+      return Buffer.from(htmlPart.body.data, "base64").toString("utf-8");
+    }
+    // Fall back to plain text if no HTML
+    const plainPart = payload.parts.find(p => p.mimeType === "text/plain");
+    if (plainPart?.body?.data) {
+      return Buffer.from(plainPart.body.data, "base64").toString("utf-8");
+    }
+  }
+
+  return "";
+}
+
+// ── NEW: Download a Gmail message attachment by attachmentId ──
+// Returns the decoded binary data as a Buffer.
+// Used to download PDF statement attachments for Federal Bank and HDFC cards.
+export async function downloadAttachment(
+  accessToken: string,
+  messageId: string,
+  attachmentId: string
+): Promise<Buffer> {
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/attachments/${attachmentId}`;
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Gmail attachment download failed: ${res.status} ${await res.text()}`);
+  }
+
+  const data = await res.json();
+  // Gmail returns attachment data as base64url (URL-safe base64)
+  const base64 = (data.data as string).replace(/-/g, "+").replace(/_/g, "/");
+  return Buffer.from(base64, "base64");
+}
+
+// ── NEW: Generic Gmail search (per-card statement queries) ──
+// Unlike listRelevantMessages() which hardcodes RELEVANT_SENDERS,
+// this accepts an arbitrary Gmail search query string.
+// Used by the credit-card fetch route for per-card subject/sender searches.
+export async function searchMessages(
+  accessToken: string,
+  query: string,
+  maxResults: number = 10
+): Promise<GmailMessage[]> {
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=${maxResults}`;
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Gmail search failed: ${res.status} ${await res.text()}`);
+  }
+
+  const data = await res.json();
+  return data.messages || [];
+}
+

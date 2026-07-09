@@ -22,6 +22,8 @@
     "next": "14.2.5",
     "next-auth": "^4.24.7",
     "next-themes": "^0.4.6",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^2.4.5",
     "postcss": "^8",
     "react": "^18",
     "react-dom": "^18",
@@ -33,6 +35,7 @@
     "yahoo-finance2": "^3.15.3"
   },
   "devDependencies": {
+    "@types/pdf-parse": "^1.1.5",
     "@types/web-push": "^3.6.4",
     "eslint": "^8",
     "eslint-config-next": "14.2.5"

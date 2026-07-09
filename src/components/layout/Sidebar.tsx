@@ -5,22 +5,23 @@ import Link from "next/link";
 import {
   TrendingUp, LayoutDashboard, CreditCard,
   PieChart, RefreshCw, Settings, LogOut, ChevronRight, Landmark,
-  Flag, Target, X, Sparkles, Handshake,
+  Flag, Target, X, Sparkles, Handshake, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Navigation links — update this array to add new pages
 const NAV_ITEMS = [
-  { href: "/overview",   label: "Overview",     icon: LayoutDashboard },
-  { href: "/spending",   label: "Spending",     icon: CreditCard },
-  { href: "/budget",     label: "Budget",       icon: Target },
-  { href: "/goals",      label: "Goals",        icon: Flag },
-  { href: "/investing",  label: "Investing",    icon: PieChart },
-  { href: "/smart-picks",label: "Smart Picks",  icon: Sparkles },
-  { href: "/emi",        label: "EMI Tracker",  icon: Landmark },
-  { href: "/lending",    label: "Lending",      icon: Handshake },
-  { href: "/sync",       label: "Sync",         icon: RefreshCw },
-  { href: "/settings",   label: "Settings",     icon: Settings },
+  { href: "/overview",      label: "Overview",      icon: LayoutDashboard },
+  { href: "/spending",      label: "Spending",      icon: CreditCard },
+  { href: "/budget",        label: "Budget",        icon: Target },
+  { href: "/credit-cards",  label: "Credit Cards",  icon: Wallet },
+  { href: "/goals",         label: "Goals",         icon: Flag },
+  { href: "/investing",     label: "Investing",     icon: PieChart },
+  { href: "/smart-picks",   label: "Smart Picks",   icon: Sparkles },
+  { href: "/emi",           label: "EMI Tracker",   icon: Landmark },
+  { href: "/lending",       label: "Lending",       icon: Handshake },
+  { href: "/sync",          label: "Sync",          icon: RefreshCw },
+  { href: "/settings",      label: "Settings",      icon: Settings },
 ];
 
 interface SidebarProps {
