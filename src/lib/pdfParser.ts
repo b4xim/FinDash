@@ -129,8 +129,31 @@ export async function parsePdfStatement(
   password: string,
   config: CreditCardUIConfig
 ): Promise<ParsedBillData> {
-  // Step 1 & 2: Decrypt and extract text simultaneously using pdf-parse
-  const text = await extractPdfText(encryptedBuffer, password);
+  // Try multiple password casings (banks often enforce strict casing that users get wrong)
+  const passwordsToTry = [
+    password,
+    password.toLowerCase(),
+    password.toUpperCase(),
+    password.charAt(0).toUpperCase() + password.slice(1).toLowerCase()
+  ];
+
+  let text = "";
+  let success = false;
+  let lastErr = null;
+
+  for (const pwd of passwordsToTry) {
+    try {
+      text = await extractPdfText(encryptedBuffer, pwd);
+      success = true;
+      break;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+
+  if (!success) {
+    throw lastErr;
+  }
 
   // Step 3: Apply regex patterns
   const totalMatch   = config.totalRegex.exec(text);
