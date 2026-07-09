@@ -98,13 +98,11 @@ export const CREDIT_CARD_CONFIGS: CreditCardUIConfig[] = [
     subjectKeyword: "CASHBACK SBI",
     amountSource:   "email",
     // SBI email: table with headers in row 1, values in row 2 (no "Dr" suffix)
-    // | Total amount due (₹) | Minimum amount due (₹) | Payment due date |
-    // |       33,382.00       |        668.00         |   10-Jul-2026    |
-    // totalRegex: first bare number after the header
-    // minDueRegex: skip first number (total) to reach second (minimum)
-    totalRegex:     /Total amount due[\s\S]*?([\d,]+\.?\d*)/i,
-    dueDateRegex:   /Payment due date[\s\S]*?(\d{1,2}-[A-Za-z]+-\d{4})/i,
-    minDueRegex:    /Minimum amount due[\s\S]*?[\d,]+\.?\d*[\s\S]*?([\d,]+\.?\d*)/i,
+    // The header contains an <img> for the Rupee symbol with width="7" height="10".
+    // We must match the data inside the <td> to avoid capturing the img attributes.
+    totalRegex:     /Total amount due[\s\S]*?>\s*([\d,]+\.?\d*)\s*<\/td>/i,
+    dueDateRegex:   /Payment due date[\s\S]*?>\s*(\d{1,2}-[A-Za-z]+-\d{4})\s*<\/td>/i,
+    minDueRegex:    /Minimum amount due[\s\S]*?>\s*([\d,]+\.?\d*)\s*<\/td>/i,
   },
 
   // ── 6. Federal Bank Signet ───────────────────────────────
