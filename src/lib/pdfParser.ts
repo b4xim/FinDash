@@ -16,13 +16,6 @@
 // ============================================================
 
 import { PDFDocument } from "pdf-lib";
-
-// Polyfill DOMMatrix for Vercel Node 18/20 environments (pdfjs-dist requires it)
-if (typeof global !== "undefined" && typeof global.DOMMatrix === "undefined") {
-  global.DOMMatrix = require("dommatrix");
-}
-
-import { PDFParse } from "pdf-parse";
 import { CreditCardUIConfig } from "@/types";
 
 // ── Parsed data from a PDF statement ─────────────────────────
@@ -65,7 +58,20 @@ export async function decryptPdf(encryptedBuffer: Buffer, password: string): Pro
  */
 export async function extractPdfText(buffer: Buffer, password?: string): Promise<string> {
   try {
-    const parser = new PDFParse({ data: buffer, password });
+    // Polyfill DOMMatrix for Vercel Node 18/20 environments
+    // We do this inside the function to avoid ES module import hoisting!
+    if (typeof globalThis !== "undefined" && !(globalThis as any).DOMMatrix) {
+      (globalThis as any).DOMMatrix = require("dommatrix");
+    }
+    if (typeof global !== "undefined" && !(global as any).DOMMatrix) {
+      (global as any).DOMMatrix = require("dommatrix");
+    }
+
+    // Dynamically require pdf-parse AFTER polyfilling
+    const pdfParseMod = require("pdf-parse");
+    const PDFParseClass = pdfParseMod.PDFParse;
+    
+    const parser = new PDFParseClass({ data: buffer, password });
     const result = await parser.getText();
     await parser.destroy();
     return result.text ?? "";
