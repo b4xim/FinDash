@@ -508,10 +508,21 @@ export default function CreditCardsPage() {
     setRefreshing(true);
     try {
       const res = await fetch("/api/credit-cards/fetch", { method: "POST" });
-      const data = await res.json();
+
+      // Try to parse as JSON — if this throws, the server returned non-JSON (HTML crash page)
+      let data: any;
+      try {
+        data = await res.json();
+      } catch {
+        setToast({
+          message: `Server error (HTTP ${res.status}) — check the terminal for details`,
+          type: "error",
+        });
+        return;
+      }
 
       if (!res.ok) {
-        setToast({ message: data.error ?? "Fetch failed", type: "error" });
+        setToast({ message: data.error ?? `Error ${res.status}`, type: "error" });
         return;
       }
 
@@ -525,7 +536,11 @@ export default function CreditCardsPage() {
       // Reload bills from DB
       await loadBills();
     } catch (err) {
-      setToast({ message: "Fetch failed — check your Gmail connection", type: "error" });
+      // Network-level failure (no response at all)
+      setToast({
+        message: err instanceof Error ? err.message : "Network error — is the dev server running?",
+        type: "error",
+      });
     } finally {
       setRefreshing(false);
     }

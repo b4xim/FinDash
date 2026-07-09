@@ -225,90 +225,106 @@ async function fetchPdfCard(
 
 // ── Main POST handler ─────────────────────────────────────────
 export async function POST() {
-  const session = await requireAuth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const accessToken = await getValidAccessToken();
-  if (!accessToken) {
-    return NextResponse.json(
-      { error: "Gmail not connected. Go to Settings to connect your Gmail account." },
-      { status: 400 }
-    );
-  }
-
-  // Load DB configs (includes pdf_password — never logged or returned to client)
-  let dbConfigs: CreditCardConfig[];
+  // Top-level guard: any unhandled throw returns clean JSON (not an HTML 500 page).
+  // Without this, Next.js returns HTML on crash, res.json() throws on the client,
+  // and the error detail is completely hidden.
   try {
-    dbConfigs = await getAllCardConfigs();
+    const session = await requireAuth();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const accessToken = await getValidAccessToken();
+    if (!accessToken) {
+      return NextResponse.json(
+        { error: "Gmail not connected. Go to Settings to connect your Gmail account." },
+        { status: 400 }
+      );
+    }
+
+    // Load DB configs (includes pdf_password — never logged or returned to client)
+    let dbConfigs: CreditCardConfig[];
+    try {
+      dbConfigs = await getAllCardConfigs();
+    } catch (err) {
+      console.error("Failed to load credit_card_config from DB:", err);
+      return NextResponse.json(
+        {
+          error:
+            "Could not read credit_card_config table. Have you run the Supabase migration?\n" +
+            (err instanceof Error ? err.message : String(err)),
+        },
+        { status: 500 }
+      );
+    }
+    const dbConfigByName = Object.fromEntries(dbConfigs.map(c => [c.card_name, c]));
+
+    // Run all 7 cards in parallel via Promise.allSettled
+    const fetchPromises = CREDIT_CARD_CONFIGS.map(config => {
+      const dbConfig = dbConfigByName[config.cardName];
+      const fetchFn =
+        config.amountSource === "pdf"
+          ? fetchPdfCard(accessToken, config, dbConfig)
+          : fetchEmailBodyCard(accessToken, config, dbConfig);
+
+      return fetchFn
+        .then(async result => {
+          const cardResult: CardFetchResult = { cardName: config.cardName, ...result };
+
+          // On success, upsert the bill into the database
+          if (result.success && result.totalAmountDue !== undefined) {
+            await upsertBill({
+              card_name: config.cardName,
+              sender_email: dbConfig?.sender_email ?? null,
+              total_amount_due: result.totalAmountDue,
+              minimum_due: result.minimumDue ?? 0,
+              due_date: result.dueDate ?? null,
+              statement_month: result.statementMonth ?? getCurrentStatementMonth(),
+              last_fetched_at: new Date().toISOString(),
+            });
+          }
+
+          return cardResult;
+        })
+        .catch(err => ({
+          cardName: config.cardName,
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+        }));
+    });
+
+    const settled = await Promise.allSettled(fetchPromises);
+    const cardResults: CardFetchResult[] = settled.map(r =>
+      r.status === "fulfilled"
+        ? r.value
+        : { cardName: "Unknown", success: false, error: "Unexpected fetch error" }
+    );
+
+    // Auto-mark past-due unpaid bills as Overdue (non-fatal side effect)
+    await autoMarkOverdue();
+
+    const successCount = cardResults.filter(r => r.success).length;
+
+    return NextResponse.json({
+      successCount,
+      totalCount: CREDIT_CARD_CONFIGS.length,
+      results: cardResults.map(r => ({
+        cardName: r.cardName,
+        success: r.success,
+        error: r.error,
+        totalAmountDue: r.totalAmountDue,
+        dueDate: r.dueDate,
+        statementMonth: r.statementMonth,
+      })),
+    });
   } catch (err) {
-    console.error("Failed to load credit_card_config from DB:", err);
+    // Catch-all: log the real error server-side, return clean JSON to the client
+    console.error("POST /api/credit-cards/fetch unhandled error:", err);
     return NextResponse.json(
       {
         error:
-          "Could not read credit_card_config table. Have you run the Supabase migration? " +
+          "Unexpected server error: " +
           (err instanceof Error ? err.message : String(err)),
       },
       { status: 500 }
     );
   }
-  const dbConfigByName = Object.fromEntries(dbConfigs.map(c => [c.card_name, c]));
-
-  // Run all 7 cards in parallel via Promise.allSettled
-  const fetchPromises = CREDIT_CARD_CONFIGS.map(config => {
-    const dbConfig = dbConfigByName[config.cardName];
-    const fetchFn =
-      config.amountSource === "pdf"
-        ? fetchPdfCard(accessToken, config, dbConfig)
-        : fetchEmailBodyCard(accessToken, config, dbConfig);
-
-    return fetchFn
-      .then(async result => {
-        const cardResult: CardFetchResult = { cardName: config.cardName, ...result };
-
-        // On success, upsert the bill into the database
-        if (result.success && result.totalAmountDue !== undefined) {
-          await upsertBill({
-            card_name: config.cardName,
-            sender_email: dbConfig?.sender_email ?? null,
-            total_amount_due: result.totalAmountDue,
-            minimum_due: result.minimumDue ?? 0,
-            due_date: result.dueDate ?? null,
-            statement_month: result.statementMonth ?? getCurrentStatementMonth(),
-            last_fetched_at: new Date().toISOString(),
-          });
-        }
-
-        return cardResult;
-      })
-      .catch(err => ({
-        cardName: config.cardName,
-        success: false,
-        error: err instanceof Error ? err.message : String(err),
-      }));
-  });
-
-  const settled = await Promise.allSettled(fetchPromises);
-  const cardResults: CardFetchResult[] = settled.map(r =>
-    r.status === "fulfilled"
-      ? r.value
-      : { cardName: "Unknown", success: false, error: "Unexpected fetch error" }
-  );
-
-  // Auto-mark past-due unpaid bills as Overdue (non-fatal side effect)
-  await autoMarkOverdue();
-
-  const successCount = cardResults.filter(r => r.success).length;
-
-  return NextResponse.json({
-    successCount,
-    totalCount: CREDIT_CARD_CONFIGS.length,
-    results: cardResults.map(r => ({
-      cardName: r.cardName,
-      success: r.success,
-      error: r.error,
-      totalAmountDue: r.totalAmountDue,
-      dueDate: r.dueDate,
-      statementMonth: r.statementMonth,
-    })),
-  });
 }
