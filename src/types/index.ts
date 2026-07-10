@@ -12,6 +12,7 @@ export type Category =
   | "Entertainment"
   | "Healthcare"
   | "Investment"
+  | "Rent"
   | "Income"
   | "Transfer"
   | "Other";

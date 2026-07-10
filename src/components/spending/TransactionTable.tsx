@@ -11,7 +11,7 @@ import { Pencil, Trash2, ArrowUpDown, Mail } from "lucide-react";
 
 const CATEGORIES: (Category | "All")[] = [
   "All", "Food & Dining", "Shopping", "Transport", "Utilities",
-  "Entertainment", "Healthcare", "Investment", "Income", "Transfer", "Other",
+  "Entertainment", "Healthcare", "Investment", "Rent", "Income", "Transfer", "Other",
 ];
 
 type SortField = "date" | "amount";

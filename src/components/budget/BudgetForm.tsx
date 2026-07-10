@@ -9,7 +9,7 @@ import { BudgetLimit, Category } from "@/types";
 
 const SPENDABLE_CATEGORIES: Category[] = [
   "Food & Dining", "Shopping", "Transport", "Utilities",
-  "Entertainment", "Healthcare", "Other",
+  "Entertainment", "Healthcare", "Rent", "Other",
 ];
 
 interface BudgetFormProps {

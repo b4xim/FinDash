@@ -13,7 +13,7 @@ import { formatINR } from "@/lib/utils";
 
 const CATEGORIES: Category[] = [
   "Food & Dining", "Shopping", "Transport", "Utilities",
-  "Entertainment", "Healthcare", "Investment", "Income", "Transfer", "Other",
+  "Entertainment", "Healthcare", "Investment", "Rent", "Income", "Transfer", "Other",
 ];
 
 const CONFIDENCE_STYLES: Record<string, { label: string; className: string }> = {

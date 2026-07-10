@@ -10,7 +10,7 @@ import { Transaction, Category } from "@/types";
 // All available categories — must match DB CHECK constraint
 const CATEGORIES: Category[] = [
   "Food & Dining", "Shopping", "Transport", "Utilities",
-  "Entertainment", "Healthcare", "Investment", "Income", "Transfer", "Other",
+  "Entertainment", "Healthcare", "Investment", "Rent", "Income", "Transfer", "Other",
 ];
 
 interface TransactionFormProps {
