@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import CardArtwork from "@/components/credit-cards/CardArtwork";
-import { RefreshCw, Loader2, Wallet, ExternalLink } from "lucide-react";
+import { Wallet, ExternalLink } from "lucide-react";
 import { formatINR } from "@/lib/utils";
 import {
   getCardConfig,
@@ -108,7 +108,6 @@ function TotalMiniCard({ bills }: { bills: CreditCardBill[] }) {
 export default function CreditCardQuickView() {
   const [bills, setBills] = useState<CreditCardBill[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadBills = useCallback(async () => {
@@ -129,18 +128,6 @@ export default function CreditCardQuickView() {
     loadBills();
   }, [loadBills]);
 
-  async function handleRefresh() {
-    setRefreshing(true);
-    try {
-      await fetch("/api/credit-cards/fetch", { method: "POST" });
-      await loadBills();
-    } catch {
-      // Silently fail — user can go to the full page for details
-    } finally {
-      setRefreshing(false);
-    }
-  }
-
   return (
     <div>
       {/* Section header */}
@@ -149,23 +136,12 @@ export default function CreditCardQuickView() {
           <Wallet size={16} className="text-violet-light" />
           Credit Cards — Quick View
         </h2>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors disabled:opacity-50"
-            title="Refresh bills from Gmail"
-            aria-label="Refresh credit card bills"
-          >
-            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-          </button>
-          <Link
-            href="/credit-cards"
-            className="text-xs text-violet-light hover:underline flex items-center gap-1"
-          >
-            View all <ExternalLink size={10} />
-          </Link>
-        </div>
+        <Link
+          href="/credit-cards"
+          className="text-xs text-violet-light hover:underline flex items-center gap-1"
+        >
+          View all <ExternalLink size={10} />
+        </Link>
       </div>
 
       {/* Content */}
@@ -190,21 +166,14 @@ export default function CreditCardQuickView() {
         <div className="card p-6 flex flex-col items-center gap-3 text-center">
           <Wallet size={24} className="text-text-muted" />
           <div>
-            <p className="text-text-secondary text-sm font-medium">No bills fetched yet</p>
+            <p className="text-text-secondary text-sm font-medium">No bills yet</p>
             <p className="text-text-muted text-xs mt-0.5">
-              Fetch your credit card statements from Gmail
+              Add credit card transactions on the Credit Cards page
             </p>
           </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="btn-secondary text-xs flex items-center gap-1.5"
-          >
-            {refreshing
-              ? <Loader2 size={12} className="animate-spin" />
-              : <RefreshCw size={12} />}
-            {refreshing ? "Fetching…" : "Fetch Bills"}
-          </button>
+          <Link href="/credit-cards" className="btn-secondary text-xs">
+            Go to Credit Cards
+          </Link>
         </div>
       ) : (
         /* Card row */

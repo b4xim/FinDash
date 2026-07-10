@@ -51,7 +51,7 @@ export default function CreditCardsView() {
         <CardIcon size={32} className="text-text-muted mx-auto mb-3" />
         <p className="text-text-secondary">No credit card transactions yet</p>
         <p className="text-text-muted text-sm mt-1">
-          Add a transaction with an account name containing "Card", or sync from Gmail
+          Add a transaction with an account name containing "Card"
         </p>
       </div>
     );

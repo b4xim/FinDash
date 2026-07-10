@@ -7,7 +7,7 @@
 import { useState, useMemo } from "react";
 import { Transaction, Category } from "@/types";
 import { formatINR, formatDate, CATEGORY_COLORS } from "@/lib/utils";
-import { Pencil, Trash2, ArrowUpDown, Mail } from "lucide-react";
+import { Pencil, Trash2, ArrowUpDown } from "lucide-react";
 
 const CATEGORIES: (Category | "All")[] = [
   "All", "Food & Dining", "Shopping", "Transport", "Utilities",
@@ -113,7 +113,6 @@ export default function TransactionTable({ transactions, onEdit, onDelete }: Tra
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
                   <span className="font-medium text-sm text-text-primary truncate">{txn.description}</span>
-                  {txn.source === "gmail" && <Mail size={11} className="text-violet-light flex-shrink-0" />}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className={`font-mono font-semibold text-sm ${txn.type === "credit" ? "text-emerald-fin" : "text-rose-fin"}`}>
@@ -193,11 +192,6 @@ export default function TransactionTable({ transactions, onEdit, onDelete }: Tra
                   <td className="table-cell">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm leading-tight">{txn.description}</span>
-                      {txn.source === "gmail" && (
-                        <Mail size={12} className="text-violet-light flex-shrink-0">
-                          <title>Synced from Gmail</title>
-                        </Mail>
-                      )}
                       {txn.necessary === "Necessary" && (
                         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 flex-shrink-0">
                           ✓ Necessary
