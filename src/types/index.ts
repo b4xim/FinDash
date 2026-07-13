@@ -207,6 +207,33 @@ export interface LendingEntry {
   updated_at: string;
 }
 
+// ── SIP (Systematic Investment Plan) ─────────────────────────
+
+export type SipFrequency = "weekly" | "monthly" | "quarterly";
+export type SipAssetType = "mutual_fund" | "etf" | "stock";
+
+export interface SipEntry {
+  id: string;
+  name: string;                     // e.g. "Nifty 50 Index Fund SIP"
+  asset_type: SipAssetType;
+  sip_amount: number;               // Monthly / periodic amount in ₹
+  frequency: SipFrequency;
+  sip_date: number;                 // Day of month (1-31)
+  start_date: string;               // ISO date string
+  end_date?: string;                // Optional ISO date string
+  total_installments_done: number;  // Count of completed installments
+  total_invested: number;           // Running ₹ total invested via this SIP
+  holding_id?: string;              // Optional FK to holdings.id
+  account?: string;                 // Broker e.g. "Zerodha", "Groww"
+  mfapi_code?: string;              // AMFI scheme code for mutual fund SIPs
+  ticker?: string;                  // Symbol for stock/ETF SIPs
+  is_active: boolean;
+  step_up_pct?: number;             // Annual step-up % (future use)
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Credit Cards ──────────────────────────────────────────────
 
 export type CreditCardStatus = "Unpaid" | "Paid" | "Overdue";
