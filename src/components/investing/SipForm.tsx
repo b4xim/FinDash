@@ -3,14 +3,15 @@
 // ============================================================
 // SipForm — Add / Edit SIP mandate modal form
 // Supports: mutual_fund (MF search), etf, stock (Ticker search)
+// Includes: "Link to Holding" dropdown with auto-match + auto-create
 // ============================================================
 
-import { useState } from "react";
-import { SipEntry, SipAssetType, SipFrequency, MFScheme } from "@/types";
+import { useState, useEffect } from "react";
+import { SipEntry, SipAssetType, SipFrequency, MFScheme, Holding } from "@/types";
 import MFSearchInput from "./MFSearchInput";
 import TickerSearchInput from "./TickerSearchInput";
 import type { TickerResult } from "@/app/api/ticker-search/route";
-import { Zap, CalendarDays } from "lucide-react";
+import { Zap, CalendarDays, Link2, AlertCircle, CheckCircle2 } from "lucide-react";
 
 const SIP_ASSET_TYPES: { value: SipAssetType; label: string }[] = [
   { value: "mutual_fund", label: "Mutual Fund" },
@@ -45,17 +46,25 @@ interface FormState {
   mfapi_code: string;
   ticker: string;
   notes: string;
+  // Holding link
+  holding_id: string;
+  auto_create_holding: boolean;
 }
 
 interface SipFormProps {
   initial?: Partial<SipEntry>;
-  onSubmit: (data: Partial<SipEntry>) => Promise<void>;
+  holdings?: Holding[]; // passed from page to populate the link dropdown
+  onSubmit: (data: Partial<SipEntry> & {
+    auto_match_holding?: boolean;
+    auto_create_holding?: boolean;
+  }) => Promise<void>;
   onCancel: () => void;
   loading: boolean;
 }
 
-export default function SipForm({ initial, onSubmit, onCancel, loading }: SipFormProps) {
+export default function SipForm({ initial, holdings = [], onSubmit, onCancel, loading }: SipFormProps) {
   const today = new Date().toISOString().split("T")[0];
+  const isEditing = !!initial?.id;
 
   const [form, setForm] = useState<FormState>({
     name:                    initial?.name ?? "",
@@ -71,11 +80,25 @@ export default function SipForm({ initial, onSubmit, onCancel, loading }: SipFor
     mfapi_code:              initial?.mfapi_code ?? "",
     ticker:                  initial?.ticker ?? "",
     notes:                   initial?.notes ?? "",
+    holding_id:              initial?.holding_id ?? "",
+    auto_create_holding:     false,
   });
 
-  function set(field: keyof FormState, value: string) {
+  function set<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm(prev => ({ ...prev, [field]: value }));
   }
+
+  // Auto-match holding when mfapi_code or ticker is set
+  useEffect(() => {
+    if (isEditing) return;
+    if (form.mfapi_code) {
+      const match = holdings.find(h => h.mfapi_code === form.mfapi_code);
+      if (match) set("holding_id", match.id);
+    } else if (form.ticker) {
+      const match = holdings.find(h => h.ticker === form.ticker);
+      if (match) set("holding_id", match.id);
+    }
+  }, [form.mfapi_code, form.ticker]);
 
   function handleMFSelect(scheme: MFScheme) {
     setForm(prev => ({
@@ -93,9 +116,19 @@ export default function SipForm({ initial, onSubmit, onCancel, loading }: SipFor
     }));
   }
 
+  // Holdings compatible with this SIP's asset type
+  const compatibleHoldings = holdings.filter(h => {
+    if (form.asset_type === "mutual_fund") return h.asset_type === "mutual_fund";
+    if (form.asset_type === "etf") return h.asset_type === "etf";
+    if (form.asset_type === "stock") return h.asset_type === "stock";
+    return false;
+  });
+
+  const linkedHolding = holdings.find(h => h.id === form.holding_id);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload: Partial<SipEntry> = {
+    const payload = {
       name:                    form.name || undefined,
       asset_type:              form.asset_type,
       sip_amount:              parseFloat(form.sip_amount),
@@ -105,26 +138,26 @@ export default function SipForm({ initial, onSubmit, onCancel, loading }: SipFor
       end_date:                form.end_date || undefined,
       total_installments_done: parseInt(form.total_installments_done) || 0,
       total_invested:          parseFloat(form.total_invested) || 0,
+      holding_id:              form.holding_id || undefined,
       account:                 form.account || undefined,
       mfapi_code:              form.mfapi_code || undefined,
       ticker:                  form.ticker || undefined,
       is_active:               true,
       notes:                   form.notes || undefined,
+      // Only pass auto flags when not editing and no holding is selected
+      auto_match_holding:      !isEditing && !form.holding_id,
+      auto_create_holding:     !isEditing && !form.holding_id && form.auto_create_holding,
     };
     await onSubmit(payload);
   }
 
   const isMF    = form.asset_type === "mutual_fund";
   const isTicker = form.asset_type === "stock" || form.asset_type === "etf";
-  const isEditing = !!initial?.id;
 
-  // Generate date suffix helper
   const dateSuffix = (d: number) => {
     if (d >= 11 && d <= 13) return "th";
     switch (d % 10) {
-      case 1: return "st";
-      case 2: return "nd";
-      case 3: return "rd";
+      case 1: return "st"; case 2: return "nd"; case 3: return "rd";
       default: return "th";
     }
   };
@@ -140,7 +173,10 @@ export default function SipForm({ initial, onSubmit, onCancel, loading }: SipFor
             <button
               key={t.value}
               type="button"
-              onClick={() => set("asset_type", t.value)}
+              onClick={() => {
+                set("asset_type", t.value);
+                set("holding_id", "");
+              }}
               className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all border ${
                 form.asset_type === t.value
                   ? "bg-violet/20 border-violet text-violet-light"
@@ -173,13 +209,10 @@ export default function SipForm({ initial, onSubmit, onCancel, loading }: SipFor
         </div>
       ) : (
         <div>
-          <label className="label">
-            {isTicker ? (
-              <span className="flex items-center gap-1.5">
-                {form.asset_type === "etf" ? "ETF" : "Stock"} <Zap size={12} className="text-gold" />
-                <span className="text-text-muted font-normal text-xs">(search by name)</span>
-              </span>
-            ) : "Name"}
+          <label className="label flex items-center gap-1.5">
+            {form.asset_type === "etf" ? "ETF" : "Stock"}
+            {isTicker && <Zap size={12} className="text-gold" />}
+            {isTicker && <span className="text-text-muted font-normal text-xs">(search by name)</span>}
           </label>
           {isTicker ? (
             <>
@@ -196,7 +229,6 @@ export default function SipForm({ initial, onSubmit, onCancel, loading }: SipFor
                 placeholder="Or type symbol directly — e.g. NIFTYBEES.NS"
                 className="input mt-2 text-xs font-mono"
               />
-              {/* Name override */}
               {form.name && (
                 <input
                   type="text"
@@ -219,6 +251,80 @@ export default function SipForm({ initial, onSubmit, onCancel, loading }: SipFor
           )}
         </div>
       )}
+
+      {/* Link to Holding ──────────────────────────────────────── */}
+      <div className="p-3 rounded-xl bg-surface-overlay border border-white/[0.06] space-y-2.5">
+        <div className="flex items-center gap-1.5">
+          <Link2 size={13} className="text-violet-light" />
+          <p className="text-text-secondary text-xs font-medium">Link to Holding</p>
+          <span className="text-text-muted text-[10px] ml-auto">
+            enables auto-update of units when recording installment
+          </span>
+        </div>
+
+        {compatibleHoldings.length > 0 ? (
+          <>
+            <select
+              className="select text-sm"
+              value={form.holding_id}
+              onChange={e => {
+                set("holding_id", e.target.value);
+                set("auto_create_holding", false);
+              }}
+            >
+              <option value="">— Select holding to link —</option>
+              {compatibleHoldings.map(h => (
+                <option key={h.id} value={h.id}>
+                  {h.name}{h.account ? ` (${h.account})` : ""}
+                </option>
+              ))}
+            </select>
+
+            {linkedHolding && (
+              <div className="flex items-center gap-1.5 text-[11px] text-emerald-fin">
+                <CheckCircle2 size={11} />
+                Linked — recording installments will update this holding&apos;s units &amp; avg price
+              </div>
+            )}
+
+            {!form.holding_id && !isEditing && (
+              <label className="flex items-center gap-2 text-xs text-text-muted cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.auto_create_holding}
+                  onChange={e => set("auto_create_holding", e.target.checked)}
+                  className="rounded"
+                />
+                Create a new holding automatically for this SIP
+              </label>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex items-start gap-1.5 text-[11px] text-text-muted">
+              <AlertCircle size={11} className="mt-0.5 flex-shrink-0 text-amber-400" />
+              No {form.asset_type.replace("_", " ")} holdings found to link.
+            </div>
+            {!isEditing && (
+              <label className="flex items-center gap-2 text-xs text-text-muted cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.auto_create_holding}
+                  onChange={e => set("auto_create_holding", e.target.checked)}
+                  className="rounded"
+                />
+                Create a new holding automatically for this SIP
+              </label>
+            )}
+          </>
+        )}
+
+        {form.auto_create_holding && (
+          <p className="text-[11px] text-violet-light">
+            A new holding with 0 units will be created. Units accumulate automatically as you record installments.
+          </p>
+        )}
+      </div>
 
       {/* SIP Amount + Frequency */}
       <div className="grid grid-cols-2 gap-3">
@@ -287,7 +393,7 @@ export default function SipForm({ initial, onSubmit, onCancel, loading }: SipFor
         </div>
       </div>
 
-      {/* End Date (optional) */}
+      {/* End Date */}
       <div>
         <label className="label">End Date <span className="text-text-muted">(optional)</span></label>
         <input
@@ -300,11 +406,11 @@ export default function SipForm({ initial, onSubmit, onCancel, loading }: SipFor
         <p className="text-text-muted text-xs mt-1">Leave blank for an open-ended SIP mandate</p>
       </div>
 
-      {/* Pre-existing installment history (for SIPs started before adding to dashboard) */}
+      {/* Pre-existing history */}
       {!isEditing && (
         <div className="p-3 rounded-xl bg-surface-overlay border border-white/[0.06] space-y-3">
           <p className="text-text-secondary text-xs font-medium">
-            Already running? Log what's already invested:
+            Already running? Log what&apos;s already invested:
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -344,9 +450,7 @@ export default function SipForm({ initial, onSubmit, onCancel, loading }: SipFor
           }}
         >
           <option value="">— Select broker / account —</option>
-          {ACCOUNT_OPTIONS.map(a => (
-            <option key={a} value={a}>{a}</option>
-          ))}
+          {ACCOUNT_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
           <option value="Other">Other…</option>
         </select>
         {form.account !== "" && !ACCOUNT_OPTIONS.includes(form.account) && (

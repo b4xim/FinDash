@@ -2,6 +2,12 @@
 // /api/sips
 // GET  — fetch all SIPs (cached, invalidated on mutation)
 // POST — create a new SIP mandate
+//
+// POST extras:
+//   - If auto_match_holding=true, finds an existing holding with
+//     matching mfapi_code or ticker and sets holding_id
+//   - If auto_create_holding=true and no match found, creates a
+//     new holding with 0 units (populated on first installment)
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -47,8 +53,11 @@ export async function POST(req: NextRequest) {
   const {
     name, asset_type, sip_amount, frequency, sip_date,
     start_date, end_date, total_installments_done, total_invested,
-    holding_id, account, mfapi_code, ticker, is_active,
+    holding_id: providedHoldingId, account, mfapi_code, ticker, is_active,
     step_up_pct, notes,
+    // Auto-link flags
+    auto_match_holding,
+    auto_create_holding,
   } = body;
 
   if (!name || !asset_type || !sip_amount || !sip_date || !start_date) {
@@ -56,6 +65,51 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = getSupabaseAdmin();
+  let holding_id: string | null = providedHoldingId || null;
+
+  // ── Auto-match existing holding ────────────────────────────
+  if (!holding_id && auto_match_holding) {
+    let matchQuery = supabase.from("holdings").select("id, name");
+
+    if (mfapi_code) {
+      const { data: match } = await matchQuery.eq("mfapi_code", mfapi_code).maybeSingle();
+      if (match) holding_id = match.id;
+    } else if (ticker) {
+      const { data: match } = await matchQuery.eq("ticker", ticker).maybeSingle();
+      if (match) holding_id = match.id;
+    }
+  }
+
+  // ── Auto-create a new holding if no match ─────────────────
+  if (!holding_id && auto_create_holding) {
+    const holdingAssetType =
+      asset_type === "mutual_fund" ? "mutual_fund" :
+      asset_type === "etf" ? "etf" : "stock";
+
+    const { data: newHolding, error: holdingErr } = await supabase
+      .from("holdings")
+      .insert([{
+        name,
+        asset_type: holdingAssetType,
+        units: 0,
+        buy_price: 0,
+        current_price: 0,
+        account: account || null,
+        mfapi_code: mfapi_code || null,
+        ticker: ticker || null,
+        notes: `Auto-created for SIP on ${new Date().toLocaleDateString("en-IN")}`,
+        price_updated_at: new Date().toISOString(),
+      }])
+      .select("id")
+      .single();
+
+    if (!holdingErr && newHolding) {
+      holding_id = newHolding.id;
+      revalidateTag("holdings");
+    }
+  }
+
+  // ── Create the SIP row ─────────────────────────────────────
   const { data, error } = await supabase
     .from("sips")
     .insert([{
@@ -68,7 +122,7 @@ export async function POST(req: NextRequest) {
       end_date: end_date || null,
       total_installments_done: parseInt(total_installments_done) || 0,
       total_invested: parseFloat(total_invested) || 0,
-      holding_id: holding_id || null,
+      holding_id,
       account: account || null,
       mfapi_code: mfapi_code || null,
       ticker: ticker || null,

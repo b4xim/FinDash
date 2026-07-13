@@ -3,14 +3,21 @@
 // ============================================================
 // SipCard — individual SIP mandate display card
 // Shows: name, amount, next SIP date, totals, status, actions
+// Linked holding: shows holding name + units detail after recording
 // ============================================================
 
 import { SipEntry } from "@/types";
 import { formatINR } from "@/lib/utils";
 import {
   Pencil, Trash2, CheckCircle2, PauseCircle, PlayCircle,
-  CalendarClock, TrendingUp, Repeat2, Zap
+  CalendarClock, TrendingUp, Repeat2, Zap, Link2, AlertCircle
 } from "lucide-react";
+
+export interface RecordResult {
+  holdingUpdated: boolean;
+  unitsAdded: number | null;
+  priceUsed: number | null;
+}
 
 const ASSET_LABELS: Record<string, string> = {
   mutual_fund: "Mutual Fund",
@@ -83,15 +90,17 @@ function dateSuffix(n: number): string {
 
 interface SipCardProps {
   sip: SipEntry;
+  holdingName?: string;       // name of linked holding, if any
+  lastRecord?: RecordResult;  // result of the most recent "Record Installment" call
   onEdit: (s: SipEntry) => void;
   onDelete: (s: SipEntry) => void;
   onToggleActive: (s: SipEntry) => void;
   onRecordInstallment: (s: SipEntry) => void;
-  recording: boolean; // true while "Record" API call is in flight for this SIP
+  recording: boolean;
 }
 
 export default function SipCard({
-  sip, onEdit, onDelete, onToggleActive, onRecordInstallment, recording,
+  sip, holdingName, lastRecord, onEdit, onDelete, onToggleActive, onRecordInstallment, recording,
 }: SipCardProps) {
   const nextDate = getNextSipDate(sip.sip_date, sip.frequency);
   const daysLeft = daysUntil(nextDate);
@@ -117,6 +126,18 @@ export default function SipCard({
               <Zap size={11} className="text-gold flex-shrink-0" />
             )}
           </div>
+          {/* Linked holding info or unlinked warning */}
+          {holdingName ? (
+            <div className="flex items-center gap-1 mt-0.5 text-[10px] text-violet-light">
+              <Link2 size={9} />
+              <span className="truncate">{holdingName}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 mt-0.5 text-[10px] text-amber-400/70">
+              <AlertCircle size={9} />
+              <span>No holding linked — units won&apos;t update</span>
+            </div>
+          )}
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <span
               className="text-[10px] px-1.5 py-0.5 rounded font-medium"
@@ -203,6 +224,17 @@ export default function SipCard({
           <> · ends {new Date(sip.end_date).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}</>
         )}
       </p>
+
+      {/* Last record result detail */}
+      {lastRecord && (
+        <div className="text-[11px] rounded-lg px-2.5 py-2 bg-emerald-fin/10 border border-emerald-fin/20 text-emerald-fin animate-fade-in">
+          {lastRecord.unitsAdded && lastRecord.priceUsed ? (
+            <span>+{lastRecord.unitsAdded.toFixed(4)} units @ ₹{lastRecord.priceUsed.toFixed(2)}{lastRecord.holdingUpdated ? " · holding updated ✓" : ""}</span>
+          ) : (
+            <span>Installment recorded ✓</span>
+          )}
+        </div>
+      )}
 
       {/* Action row */}
       <div className="flex items-center gap-2 pt-1 border-t border-white/[0.06]">

@@ -14,6 +14,7 @@ import HoldingForm from "@/components/investing/HoldingForm";
 import AllocationPieChart from "@/components/investing/AllocationPieChart";
 import AIPortfolioAnalysis from "@/components/investing/AIPortfolioAnalysis";
 import SipCard from "@/components/investing/SipCard";
+import type { RecordResult } from "@/components/investing/SipCard";
 import SipForm from "@/components/investing/SipForm";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -41,6 +42,7 @@ export default function InvestingPage() {
   const [sipsLoading, setSipsLoading] = useState(true);
   const [sipFormLoading, setSipFormLoading] = useState(false);
   const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [recordResults, setRecordResults] = useState<Record<string, RecordResult>>({});
 
   const [showAddSipModal, setShowAddSipModal] = useState(false);
   const [editingSip, setEditingSip] = useState<SipEntry | null>(null);
@@ -163,11 +165,31 @@ export default function InvestingPage() {
 
   async function handleRecordInstallment(sip: SipEntry) {
     setRecordingId(sip.id);
-    await fetch(`/api/sips/${sip.id}`, {
+    const res = await fetch(`/api/sips/${sip.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "record_installment" }),
     });
+    const data = await res.json();
+    // Store result per SIP to show units detail on the card
+    if (res.ok) {
+      setRecordResults(prev => ({
+        ...prev,
+        [sip.id]: {
+          holdingUpdated: data.holdingUpdated ?? false,
+          unitsAdded: data.unitsAdded ?? null,
+          priceUsed: data.priceUsed ?? null,
+        },
+      }));
+      // If the holding was updated, refresh holdings too
+      if (data.holdingUpdated) await fetchHoldings();
+      // Clear the result badge after 8 seconds
+      setTimeout(() => setRecordResults(prev => {
+        const next = { ...prev };
+        delete next[sip.id];
+        return next;
+      }), 8000);
+    }
     await fetchSips();
     setRecordingId(null);
   }
@@ -391,17 +413,24 @@ export default function InvestingPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {sips.map(sip => (
-                <SipCard
-                  key={sip.id}
-                  sip={sip}
-                  onEdit={setEditingSip}
-                  onDelete={setDeletingSip}
-                  onToggleActive={handleToggleSipActive}
-                  onRecordInstallment={handleRecordInstallment}
-                  recording={recordingId === sip.id}
-                />
-              ))}
+              {sips.map(sip => {
+                const linkedHolding = sip.holding_id
+                  ? holdings.find(h => h.id === sip.holding_id)
+                  : undefined;
+                return (
+                  <SipCard
+                    key={sip.id}
+                    sip={sip}
+                    holdingName={linkedHolding?.name}
+                    lastRecord={recordResults[sip.id]}
+                    onEdit={setEditingSip}
+                    onDelete={setDeletingSip}
+                    onToggleActive={handleToggleSipActive}
+                    onRecordInstallment={handleRecordInstallment}
+                    recording={recordingId === sip.id}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
@@ -449,13 +478,14 @@ export default function InvestingPage() {
 
       {/* ── SIP modals ── */}
       <Modal open={showAddSipModal} onClose={() => setShowAddSipModal(false)} title="Add SIP">
-        <SipForm onSubmit={handleAddSip} onCancel={() => setShowAddSipModal(false)} loading={sipFormLoading} />
+        <SipForm holdings={holdings} onSubmit={handleAddSip} onCancel={() => setShowAddSipModal(false)} loading={sipFormLoading} />
       </Modal>
 
       <Modal open={!!editingSip} onClose={() => setEditingSip(null)} title="Edit SIP">
         {editingSip && (
           <SipForm
             initial={editingSip}
+            holdings={holdings}
             onSubmit={handleEditSip}
             onCancel={() => setEditingSip(null)}
             loading={sipFormLoading}
