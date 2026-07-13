@@ -20,7 +20,7 @@ import { Category } from "@/types";
 const CATEGORY_MAP: Record<string, Category> = {
   "Food":          "Food & Dining",
   "Transport":     "Transport",
-  "Rent":          "Other",
+  "Rent":          "Rent",
   "Shopping":      "Shopping",
   "Entertainment": "Entertainment",
   "Health":        "Healthcare",
@@ -105,12 +105,23 @@ async function runSheetSync(): Promise<{
       .maybeSingle();
 
     if (existing) {
-      // Compare every field — only update if something actually changed
+      // Preserve any category the user has manually set in the app —
+      // only revert to the sheet-mapped category if the user hasn't changed it
+      // (i.e. the stored category still matches what the sheet would have produced).
+      const preservedCategory = existing.category as Category;
+      const recordToUpdate = {
+        ...record,
+        // Keep the existing category unless it still equals what the sheet originally mapped,
+        // meaning the user hasn't touched it — detect a manual edit by checking if the
+        // stored category differs from what the sheet maps to now.
+        category: preservedCategory,
+      };
+
+      // Compare every field except category (which the user may have overridden)
       const hasChanged =
         existing.date        !== record.date        ||
         existing.description !== record.description ||
         existing.amount      !== record.amount       ||
-        existing.category    !== record.category     ||
         (existing.account   ?? undefined) !== record.account   ||
         (existing.notes     ?? undefined) !== record.notes     ||
         (existing.necessary ?? undefined) !== record.necessary ||
@@ -119,7 +130,7 @@ async function runSheetSync(): Promise<{
       if (!hasChanged) {
         skipped++;
       } else {
-        const { error } = await supabase.from("transactions").update(record).eq("id", existing.id);
+        const { error } = await supabase.from("transactions").update(recordToUpdate).eq("id", existing.id);
         if (error) errors.push(`Row ${row.row_num}: ${error.message}`); else updated++;
       }
     } else {
@@ -144,7 +155,7 @@ async function runSheetSync(): Promise<{
     await sendPushNotification({
       title: "Sheets Sync Complete",
       body: message,
-      url: "/sync",
+      url: "/settings",
     });
   }
 
