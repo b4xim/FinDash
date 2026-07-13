@@ -2,6 +2,7 @@ import Header from "@/components/layout/Header";
 import ChangePasswordForm from "@/components/settings/ChangePasswordForm";
 import WeeklyDigestCard from "@/components/settings/WeeklyDigestCard";
 import PushNotificationCard from "@/components/settings/PushNotificationCard";
+import GoogleSheetsSyncCard from "@/components/settings/GoogleSheetsSyncCard";
 
 export default function SettingsPage() {
   return (
@@ -10,6 +11,7 @@ export default function SettingsPage() {
       <main className="flex-1 p-6 space-y-6 animate-fade-in max-w-2xl">
         <PushNotificationCard />
         <WeeklyDigestCard />
+        <GoogleSheetsSyncCard />
         <ChangePasswordForm />
       </main>
     </>

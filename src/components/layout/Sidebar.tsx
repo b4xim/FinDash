@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   TrendingUp, LayoutDashboard, CreditCard,
-  PieChart, RefreshCw, Settings, LogOut, ChevronRight, Landmark,
+  PieChart, Settings, LogOut, ChevronRight, Landmark,
   Flag, Target, X, Sparkles, Handshake, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,6 @@ const NAV_ITEMS = [
   { href: "/smart-picks",   label: "Smart Picks",   icon: Sparkles },
   { href: "/emi",           label: "EMI Tracker",   icon: Landmark },
   { href: "/lending",       label: "Lending",       icon: Handshake },
-  { href: "/sync",          label: "Sync",          icon: RefreshCw },
   { href: "/settings",      label: "Settings",      icon: Settings },
 ];
 
