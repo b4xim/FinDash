@@ -41,6 +41,7 @@ export default function InvestingPage() {
   const [sips, setSips] = useState<SipEntry[]>([]);
   const [sipsLoading, setSipsLoading] = useState(true);
   const [sipFormLoading, setSipFormLoading] = useState(false);
+  const [sipFormError, setSipFormError] = useState<string | null>(null);
   const [recordingId, setRecordingId] = useState<string | null>(null);
   const [recordResults, setRecordResults] = useState<Record<string, RecordResult>>({});
 
@@ -126,24 +127,40 @@ export default function InvestingPage() {
   // ── SIP CRUD ───────────────────────────────────────────────
   async function handleAddSip(data: Partial<SipEntry>) {
     setSipFormLoading(true);
+    setSipFormError(null);
     const res = await fetch("/api/sips", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (res.ok) { setShowAddSipModal(false); await fetchSips(); }
+    if (res.ok) {
+      setShowAddSipModal(false);
+      setSipFormError(null);
+      await fetchSips();
+    } else {
+      const json = await res.json().catch(() => ({}));
+      setSipFormError(json.error || `Error ${res.status}: Failed to add SIP`);
+    }
     setSipFormLoading(false);
   }
 
   async function handleEditSip(data: Partial<SipEntry>) {
     if (!editingSip) return;
     setSipFormLoading(true);
+    setSipFormError(null);
     const res = await fetch(`/api/sips/${editingSip.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (res.ok) { setEditingSip(null); await fetchSips(); }
+    if (res.ok) {
+      setEditingSip(null);
+      setSipFormError(null);
+      await fetchSips();
+    } else {
+      const json = await res.json().catch(() => ({}));
+      setSipFormError(json.error || `Error ${res.status}: Failed to update SIP`);
+    }
     setSipFormLoading(false);
   }
 
@@ -477,17 +494,27 @@ export default function InvestingPage() {
       />
 
       {/* ── SIP modals ── */}
-      <Modal open={showAddSipModal} onClose={() => setShowAddSipModal(false)} title="Add SIP">
-        <SipForm holdings={holdings} onSubmit={handleAddSip} onCancel={() => setShowAddSipModal(false)} loading={sipFormLoading} />
+      <Modal open={showAddSipModal} onClose={() => { setShowAddSipModal(false); setSipFormError(null); }} title="Add SIP">
+        {sipFormError && (
+          <div className="mb-4 px-3 py-2.5 rounded-lg bg-rose-fin/10 border border-rose-fin/30 text-rose-fin text-sm">
+            {sipFormError}
+          </div>
+        )}
+        <SipForm holdings={holdings} onSubmit={handleAddSip} onCancel={() => { setShowAddSipModal(false); setSipFormError(null); }} loading={sipFormLoading} />
       </Modal>
 
-      <Modal open={!!editingSip} onClose={() => setEditingSip(null)} title="Edit SIP">
+      <Modal open={!!editingSip} onClose={() => { setEditingSip(null); setSipFormError(null); }} title="Edit SIP">
+        {sipFormError && (
+          <div className="mb-4 px-3 py-2.5 rounded-lg bg-rose-fin/10 border border-rose-fin/30 text-rose-fin text-sm">
+            {sipFormError}
+          </div>
+        )}
         {editingSip && (
           <SipForm
             initial={editingSip}
             holdings={holdings}
             onSubmit={handleEditSip}
-            onCancel={() => setEditingSip(null)}
+            onCancel={() => { setEditingSip(null); setSipFormError(null); }}
             loading={sipFormLoading}
           />
         )}

@@ -11,7 +11,7 @@ import { SipEntry, SipAssetType, SipFrequency, MFScheme, Holding } from "@/types
 import MFSearchInput from "./MFSearchInput";
 import TickerSearchInput from "./TickerSearchInput";
 import type { TickerResult } from "@/app/api/ticker-search/route";
-import { Zap, CalendarDays, Link2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Zap, CalendarDays, Link2, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 
 const SIP_ASSET_TYPES: { value: SipAssetType; label: string }[] = [
   { value: "mutual_fund", label: "Mutual Fund" },
@@ -65,6 +65,8 @@ interface SipFormProps {
 export default function SipForm({ initial, holdings = [], onSubmit, onCancel, loading }: SipFormProps) {
   const today = new Date().toISOString().split("T")[0];
   const isEditing = !!initial?.id;
+
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const [form, setForm] = useState<FormState>({
     name:                    initial?.name ?? "",
@@ -126,8 +128,28 @@ export default function SipForm({ initial, holdings = [], onSubmit, onCancel, lo
 
   const linkedHolding = holdings.find(h => h.id === form.holding_id);
 
+  const isMF     = form.asset_type === "mutual_fund";
+  const isTicker = form.asset_type === "stock" || form.asset_type === "etf";
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setValidationError(null);
+
+    // ── Client-side validation ──
+    if (isMF && !form.name.trim()) {
+      setValidationError("Please search and select a mutual fund before saving.");
+      return;
+    }
+    if (isTicker && !form.ticker.trim()) {
+      setValidationError("Please search or type a ticker symbol (e.g. NIFTYBEES.NS) before saving.");
+      return;
+    }
+    const amount = parseFloat(form.sip_amount);
+    if (!form.sip_amount || isNaN(amount) || amount <= 0) {
+      setValidationError("SIP Amount must be a valid number greater than 0.");
+      return;
+    }
+
     const payload = {
       name:                    form.name || undefined,
       asset_type:              form.asset_type,
@@ -151,9 +173,6 @@ export default function SipForm({ initial, holdings = [], onSubmit, onCancel, lo
     await onSubmit(payload);
   }
 
-  const isMF    = form.asset_type === "mutual_fund";
-  const isTicker = form.asset_type === "stock" || form.asset_type === "etf";
-
   const dateSuffix = (d: number) => {
     if (d >= 11 && d <= 13) return "th";
     switch (d % 10) {
@@ -165,7 +184,14 @@ export default function SipForm({ initial, holdings = [], onSubmit, onCancel, lo
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
 
-      {/* Asset type */}
+      {/* Validation / API error banner */}
+      {validationError && (
+        <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-rose-fin/10 border border-rose-fin/30 text-rose-fin text-sm">
+          <XCircle size={15} className="mt-0.5 flex-shrink-0" />
+          {validationError}
+        </div>
+      )}
+
       <div>
         <label className="label">Asset Type</label>
         <div className="flex gap-2">
