@@ -16,6 +16,11 @@ import { requireAuth } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { Category } from "@/types";
 
+// Extend Vercel function timeout — the sync fetches from Google Sheets
+// (external network) then does N sequential Supabase upserts, which can
+// easily exceed the default 10 s limit.
+export const maxDuration = 60;
+
 // ── Category mapping: Sheets → FinDash ───────────────────────
 const CATEGORY_MAP: Record<string, Category> = {
   "Food":          "Food & Dining",
