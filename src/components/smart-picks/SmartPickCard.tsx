@@ -8,7 +8,7 @@
 import type { SmartPick } from "@/types";
 import {
   TrendingUp, TrendingDown, Shield, AlertTriangle,
-  BarChart3, Activity, Zap,
+  BarChart3, Activity, Zap, Moon,
 } from "lucide-react";
 import { formatINR } from "@/lib/utils";
 
@@ -48,9 +48,17 @@ export default function SmartPickCard({ pick }: SmartPickCardProps) {
           <h3 className="font-display font-semibold text-text-primary text-sm truncate group-hover:text-violet-light transition-colors">
             {pick.name}
           </h3>
-          <p className="text-text-muted text-xs font-mono mt-0.5">
-            {pick.assetType === "stock" ? pick.ticker.replace(".NS", "") : "Mutual Fund"}
-          </p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <p className="text-text-muted text-xs font-mono">
+              {pick.assetType === "stock" ? pick.ticker.replace(".NS", "") : "Mutual Fund"}
+            </p>
+            {pick.assetType === "stock" && (
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-fin/10 text-emerald-fin border border-emerald-fin/20">
+                <Moon size={8} />
+                Shariah
+              </span>
+            )}
+          </div>
         </div>
         <span
           className={`text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full border ${signalStyle.bg} ${signalStyle.text} ${signalStyle.border} whitespace-nowrap flex-shrink-0`}

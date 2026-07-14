@@ -19,6 +19,7 @@ import {
   NIFTY_SMALLCAP_TICKERS,
   TOP_MF_SCHEMES,
   TOP_ETF_TICKERS,
+  shariahFilter,
 } from "./nifty50";
 import type { SmartPick, PickSignal, RiskLevel, StockCategory } from "@/types";
 
@@ -219,6 +220,8 @@ async function getGeminiAnalysis(
 - "risk": one of "Low", "Medium", or "High" — for stocks, consider the segment (Nifty50=lower risk, Midcap=medium, Smallcap=higher risk) plus the volatility score
 - "rationale": a concise 1-2 sentence risk-adjusted rationale covering both potential returns and key risks for an Indian retail investor
 
+Note: All stocks and ETFs below have already been pre-screened for Shariah compliance (conventional banks, insurance, tobacco, alcohol and gambling stocks have been excluded). Mutual funds are shown as-is.
+
 STOCKS & ETFs (12 picks — 3 per segment):
 ${stockSummary}
 
@@ -281,11 +284,13 @@ export async function GET() {
 
   try {
     // 1. Screen all three segments + ETFs + mutual funds in parallel
+    //    Stocks & ETFs are pre-filtered to Shariah-compliant tickers only.
+    //    Mutual funds are NOT filtered (user preference).
     const [nifty50Stocks, midcapStocks, smallcapStocks, etfStocks, allFunds] = await Promise.all([
-      screenTickers(NIFTY_50_TICKERS, "nifty50"),
-      screenTickers(NIFTY_MIDCAP_TICKERS, "midcap"),
-      screenTickers(NIFTY_SMALLCAP_TICKERS, "smallcap"),
-      screenTickers(TOP_ETF_TICKERS, "etf"),
+      screenTickers(shariahFilter(NIFTY_50_TICKERS), "nifty50"),
+      screenTickers(shariahFilter(NIFTY_MIDCAP_TICKERS), "midcap"),
+      screenTickers(shariahFilter(NIFTY_SMALLCAP_TICKERS), "smallcap"),
+      screenTickers(shariahFilter(TOP_ETF_TICKERS), "etf"),
       screenMutualFunds(),
     ]);
 

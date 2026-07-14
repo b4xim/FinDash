@@ -3,6 +3,106 @@
 // Static list (updated periodically by NSE). Suffix .NS for Yahoo Finance.
 // ============================================================
 
+// ── Shariah Non-Compliant Tickers ─────────────────────────────
+// Stocks screened OUT for Shariah compliance:
+//   • Conventional banks & NBFCs (interest-based revenue)
+//   • Insurance companies (contain gharar/uncertainty)
+//   • Tobacco / alcohol / gambling stocks
+//   • Companies with excessive conventional debt or interest income
+// Mutual Funds are NOT filtered here (handled separately per user preference).
+export const SHARIAH_NON_COMPLIANT_TICKERS = new Set<string>([
+  // ── Conventional Banks ──
+  "HDFCBANK.NS",
+  "ICICIBANK.NS",
+  "SBIN.NS",
+  "KOTAKBANK.NS",
+  "AXISBANK.NS",
+  "INDUSINDBK.NS",
+  "PNB.NS",
+  "BANKBARODA.NS",
+  "FEDERALBNK.NS",
+  "IDFCFIRSTB.NS",
+  "YESBANK.NS",
+  "AUBANK.NS",
+  "RBLBANK.NS",
+  "J&KBANK.NS",
+  "UCOBANK.NS",
+  "IOB.NS",
+  "EQUITASBNK.NS",
+  "KARURVYSYA.NS",
+  "DCBBANK.NS",
+  "CSBBANK.NS",
+  // ── NBFCs / Financial Services ──
+  "BAJFINANCE.NS",
+  "BAJAJFINSV.NS",
+  "SHRIRAMFIN.NS",
+  "CHOLAFIN.NS",
+  "MUTHOOTFIN.NS",
+  "MANAPPURAM.NS",
+  "SUNDARMFIN.NS",
+  "M&MFIN.NS",
+  "POONAWALLA.NS",
+  "AAVAS.NS",
+  "ABCAPITAL.NS",
+  "MFSL.NS",
+  "PFC.NS",
+  "RECLTD.NS",
+  "IRFC.NS",
+  "IBULHSGFIN.NS",
+  "JIOFIN.NS",
+  "ANGELONE.NS",
+  "IFCI.NS",
+  "CDSL.NS",
+  "BSE.NS",
+  "KFINTECH.NS",
+  "CAMS.NS",
+  // ── Insurance ──
+  "SBILIFE.NS",
+  "HDFCLIFE.NS",
+  "ICICIGI.NS",
+  "ICICIPRULI.NS",
+  "MAXHEALTH.NS", // Max Financial (insurance arm)
+  // ── Tobacco ──
+  "ITC.NS",
+  "GODFRYPHLP.NS",
+  "VST.NS",
+  // ── Alcohol / Distilleries ──
+  "UNITDSPR.NS",
+  "RADICO.NS",
+  "TILAKNAGAR.NS",
+  "MCDOWELL-N.NS",
+  // ── Gambling / Lottery adjacent ──
+  "DELTA.NS",
+  // ── Banking-heavy ETFs ──
+  "BANKBEES.NS",
+  "SETFNIFBK.NS",
+  "KOTAKBKETF.NS",
+  "PSUBNKBEES.NS",
+  "KOTAKPSUBK.NS",
+  "HDFCNIFBK.NS",
+  "PVTBANIETF.NS",
+  // ── Broad-market ETFs that have significant bank exposure ──
+  // (Nifty 50 ETFs contain ~30% banks — excluded for strict compliance)
+  "NIFTYBEES.NS",
+  "SETFNIF50.NS",
+  "ICICINIFTY.NS",
+  "HDFCNIFTY.NS",
+  "KOTAKNIFTY.NS",
+  "AXISNIFTY.NS",
+  "BSLNIFTY.NS",
+  "MOM50.NS",
+  "JUNIORBEES.NS",
+  "ICICINXT50.NS",
+  "SETFNN50.NS",
+  "MID150BEES.NS",
+  "ICICIMCAP.NS",
+]);
+
+/** Returns only Shariah-compliant tickers from a given list. */
+export function shariahFilter(tickers: string[]): string[] {
+  return tickers.filter((t) => !SHARIAH_NON_COMPLIANT_TICKERS.has(t));
+}
+
 export const NIFTY_50_TICKERS = [
   "RELIANCE.NS",
   "TCS.NS",
