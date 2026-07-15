@@ -132,7 +132,7 @@ export default function AIPortfolioAnalysis() {
   const [analysis, setAnalysis] = useState<PortfolioAnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<"holdings" | "categories" | "strategy">("holdings");
 
   useEffect(() => {
