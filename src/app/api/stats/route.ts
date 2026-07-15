@@ -260,16 +260,13 @@ export async function GET() {
   const investmentSpendThisMonth = thisMonthDebits
     .filter(t => t.category === "Investment")
     .reduce((s, t) => s + Number(t.amount), 0);
-  // Use the higher of transaction-based investment spend or total holdings
-  // invested value — whichever captures the true investment commitment better.
-  const investmentAmountForCashFlow = Math.max(investmentSpendThisMonth, investmentsInvested);
-  const remaining = Math.max(thisIncome - necessarySpend - unnecessarySpend - totalMonthlyEmi - investmentAmountForCashFlow, 0);
+  const remaining = Math.max(thisIncome - necessarySpend - unnecessarySpend - totalMonthlyEmi - investmentSpendThisMonth, 0);
   const cashFlowBreakdown = [
-    { label: "Necessities",   amount: necessarySpend,                 color: "#10D98C" },
-    { label: "Discretionary", amount: unnecessarySpend,               color: "#F5A623" },
-    { label: "EMIs",          amount: totalMonthlyEmi,                color: "#F472B6" },
-    { label: "Investments",   amount: investmentAmountForCashFlow,    color: "#7C5CFC" },
-    { label: "Remaining",     amount: remaining,                      color: "#38BDF8" },
+    { label: "Necessities",   amount: necessarySpend,              color: "#10D98C" },
+    { label: "Discretionary", amount: unnecessarySpend,            color: "#F5A623" },
+    { label: "EMIs",          amount: totalMonthlyEmi,             color: "#F472B6" },
+    { label: "Investments",   amount: investmentSpendThisMonth,    color: "#7C5CFC" },
+    { label: "Remaining",     amount: remaining,                   color: "#38BDF8" },
   ].filter(item => item.amount > 0);
 
   // ── Credit Card Spends (from transactions 'account' column) ──
@@ -328,13 +325,7 @@ export async function GET() {
     : `EMIs consume ${emiRatio.toFixed(1)}% of income — consider reducing debt.`;
 
   // 6. Investment allocation (10 pts): >= 10% of income invested = full
-  // Use whichever is higher: this month's "Investment" transactions OR
-  // the total portfolio invested value as % of all-time income.
-  // This ensures directly adding holdings (without a matching transaction)
-  // still reflects in the Investment Habit metric.
-  const investmentPctFromTxns     = thisIncome > 0 ? (investmentSpendThisMonth / thisIncome) * 100 : 0;
-  const investmentPctFromPortfolio = allTimeIncome > 0 ? (investmentsInvested / allTimeIncome) * 100 : 0;
-  const investmentPct = Math.max(investmentPctFromTxns, investmentPctFromPortfolio);
+  const investmentPct = thisIncome > 0 ? (investmentSpendThisMonth / thisIncome) * 100 : 0;
   const investmentScore = Math.min(10, Math.round((Math.min(investmentPct, 10) / 10) * 10));
   const investmentTip = investmentPct >= 10
     ? `Investing ${investmentPct.toFixed(1)}% of income — great habit!`
@@ -355,7 +346,6 @@ export async function GET() {
     thisMonth: { spend: thisSpend, income: thisIncome },
     lastMonth: { spend: lastSpend, income: lastIncome },
     investmentsTotal,
-    investmentsInvested,
     investmentsGainLoss,
     netWorth,
     netCash,

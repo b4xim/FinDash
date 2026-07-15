@@ -163,7 +163,6 @@ interface StatsResponse {
   thisMonth:           { spend: number; income: number };
   lastMonth:           { spend: number; income: number };
   investmentsTotal:    number;
-  investmentsInvested: number;
   investmentsGainLoss: number;
   netWorth:            number;
   netCash:             number;
