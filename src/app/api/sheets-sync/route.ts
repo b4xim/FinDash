@@ -46,8 +46,8 @@ const CATEGORY_MAP: Record<string, Category> = {
   // Investment ← was missing — caused "Other" fallback
   "Investment":      "Investment",
   "Investments":     "Investment",
-  // Education
-  "Education":       "Education",
+  // Education (no dedicated category — maps to Other)
+  "Education":       "Other",
   // Income
   "Salary":          "Income",
   "Income":          "Income",
