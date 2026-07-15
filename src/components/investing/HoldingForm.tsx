@@ -12,7 +12,8 @@ import { Holding, MFScheme } from "@/types";
 import MFSearchInput from "./MFSearchInput";
 import TickerSearchInput from "./TickerSearchInput";
 import type { TickerResult } from "@/app/api/ticker-search/route";
-import { Zap } from "lucide-react";
+import { Zap, Info } from "lucide-react";
+import { formatINR } from "@/lib/utils";
 
 const ASSET_TYPES: { value: Holding["asset_type"]; label: string }[] = [
   { value: "mutual_fund", label: "Mutual Fund" },
@@ -56,12 +57,14 @@ interface FormState {
 
 interface HoldingFormProps {
   initial?: Partial<Holding>;
+  /** Pass the current holdings list to enable duplicate/merge detection */
+  existingHoldings?: Holding[];
   onSubmit: (data: Partial<Holding>) => Promise<void>;
   onCancel: () => void;
   loading: boolean;
 }
 
-export default function HoldingForm({ initial, onSubmit, onCancel, loading }: HoldingFormProps) {
+export default function HoldingForm({ initial, existingHoldings = [], onSubmit, onCancel, loading }: HoldingFormProps) {
   const [form, setForm] = useState<FormState>({
     name:          initial?.name ?? "",
     ticker:        initial?.ticker ?? "",
@@ -123,6 +126,15 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
 
   const isMutualFund = form.asset_type === "mutual_fund";
 
+  // Detect if a same-name + same-type holding already exists (only in Add mode)
+  const duplicateMatch = !initial?.id
+    ? existingHoldings.find(
+        (h) =>
+          h.name.trim().toLowerCase() === form.name.trim().toLowerCase() &&
+          h.asset_type === form.asset_type
+      )
+    : undefined;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Asset type — picked first since it changes the form below */}
@@ -171,7 +183,21 @@ export default function HoldingForm({ initial, onSubmit, onCancel, loading }: Ho
         </div>
       )}
 
-      {/* Ticker — live Yahoo Finance autocomplete for stocks/ETFs */}
+      {/* Duplicate / merge warning */}
+      {duplicateMatch && (
+        <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-gold/10 border border-gold/30 animate-fade-in">
+          <Info size={14} className="text-gold flex-shrink-0 mt-0.5" />
+          <p className="text-gold text-xs leading-relaxed">
+            <strong>Existing holding found.</strong> Submitting will{" "}
+            <strong>add {form.units || "N"} units</strong> to your current{" "}
+            {duplicateMatch.units.toLocaleString("en-IN")} units and recalculate a{" "}
+            <strong>weighted avg buy price</strong> from the current{" "}
+            {formatINR(duplicateMatch.buy_price)}.
+          </p>
+        </div>
+      )}
+
+
       {!isMutualFund && (form.asset_type === "stock" || form.asset_type === "etf") && (
         <div>
           <label className="label flex items-center gap-1.5">

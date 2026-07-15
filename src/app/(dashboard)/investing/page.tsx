@@ -36,6 +36,7 @@ export default function InvestingPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingHolding, setEditingHolding] = useState<Holding | null>(null);
   const [deletingHolding, setDeletingHolding] = useState<Holding | null>(null);
+  const [mergeMsg, setMergeMsg] = useState<string | null>(null);
 
   // ── SIP state ──────────────────────────────────────────────
   const [sips, setSips] = useState<SipEntry[]>([]);
@@ -80,7 +81,18 @@ export default function InvestingPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (res.ok) { setShowAddModal(false); await fetchHoldings(); }
+    if (res.ok) {
+      const json = await res.json();
+      setShowAddModal(false);
+      await fetchHoldings();
+      if (json.merged) {
+        const newAvg = json.buy_price as number;
+        setMergeMsg(
+          `Added ${(json.addedUnits as number).toLocaleString("en-IN")} units to "${json.name}" · new avg buy price ${formatINR(newAvg)}`
+        );
+        setTimeout(() => setMergeMsg(null), 7000);
+      }
+    }
     setFormLoading(false);
   }
 
@@ -325,6 +337,13 @@ export default function InvestingPage() {
               <p className="text-text-secondary text-xs mt-3 animate-fade-in">{refreshMsg}</p>
             )}
 
+            {mergeMsg && (
+              <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-emerald-fin/10 border border-emerald-fin/25 animate-fade-in">
+                <TrendingUp size={13} className="text-emerald-fin flex-shrink-0" />
+                <p className="text-emerald-fin text-xs">{mergeMsg}</p>
+              </div>
+            )}
+
             <p className="text-text-muted text-xs mt-4 leading-relaxed">
               <strong className="text-text-secondary">How prices work:</strong> Mutual funds linked via search
               auto-fetch their NAV from MFapi.in. Stocks and ETFs with an NSE symbol (e.g. RELIANCE.NS) auto-fetch
@@ -469,7 +488,12 @@ export default function InvestingPage() {
 
       {/* ── Holdings modals ── */}
       <Modal open={showAddModal} onClose={() => setShowAddModal(false)} title="Add Holding">
-        <HoldingForm onSubmit={handleAdd} onCancel={() => setShowAddModal(false)} loading={formLoading} />
+        <HoldingForm
+          existingHoldings={holdings}
+          onSubmit={handleAdd}
+          onCancel={() => setShowAddModal(false)}
+          loading={formLoading}
+        />
       </Modal>
 
       <Modal open={!!editingHolding} onClose={() => setEditingHolding(null)} title="Edit Holding">
