@@ -183,7 +183,7 @@ export async function PATCH(
         type:         "debit",
         category:     "Investment",
         account:      sip.account || null,
-        source:       "auto",
+        source:       "manual",
         gmail_msg_id: dedupKey,
       }]);
       revalidateTag("transactions");

@@ -48,7 +48,7 @@ async function createInvestmentTransaction(
     type:        "debit",
     category:    "Investment",
     account:     account || null,
-    source:      "auto",
+    source:      "manual",
     gmail_msg_id: dedupKey,
   }]);
 
