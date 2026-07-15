@@ -83,7 +83,7 @@ export async function PATCH(
     // Fetch the SIP row
     const { data: sip, error: sipErr } = await supabase
       .from("sips")
-      .select("sip_amount, total_installments_done, total_invested, holding_id, mfapi_code, ticker, asset_type")
+      .select("name, sip_amount, total_installments_done, total_invested, holding_id, mfapi_code, ticker, asset_type, account")
       .eq("id", params.id)
       .single();
 
@@ -162,6 +162,32 @@ export async function PATCH(
     }
 
     revalidateTag("sips");
+
+    // Auto-create an Investment transaction for this installment
+    // Dedup key uses installment number so it's safe to re-run.
+    const installmentNum = sip.total_installments_done + 1;
+    const dedupKey = `sip_${params.id}_installment_${installmentNum}`;
+    const today = new Date().toISOString().split("T")[0];
+
+    const { data: txnExisting } = await supabase
+      .from("transactions")
+      .select("id")
+      .eq("gmail_msg_id", dedupKey)
+      .maybeSingle();
+
+    if (!txnExisting) {
+      await supabase.from("transactions").insert([{
+        date:         today,
+        description:  `SIP — ${sip.name} (Installment #${installmentNum})`,
+        amount:       parseFloat(sipAmount.toFixed(2)),
+        type:         "debit",
+        category:     "Investment",
+        account:      sip.account || null,
+        source:       "auto",
+        gmail_msg_id: dedupKey,
+      }]);
+      revalidateTag("transactions");
+    }
 
     return NextResponse.json({
       sip: updatedSip,

@@ -11,6 +11,49 @@ import { NextRequest, NextResponse } from "next/server";
 import { unstable_cache, revalidateTag } from "next/cache";
 import { requireAuth } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+// ── Auto-create an Investment transaction when a holding is added ──
+// amount = cash actually deployed (units × buy_price), not market value.
+// Idempotent: uses a unique dedup key so re-runs never duplicate.
+async function createInvestmentTransaction(
+  supabase: SupabaseClient,
+  {
+    name,
+    amount,
+    account,
+    dedupKey,
+    date,
+  }: {
+    name: string;
+    amount: number;
+    account?: string | null;
+    dedupKey: string;
+    date: string;
+  }
+) {
+  // Skip if the key already exists (guards against double-clicks etc.)
+  const { data: existing } = await supabase
+    .from("transactions")
+    .select("id")
+    .eq("gmail_msg_id", dedupKey)
+    .maybeSingle();
+
+  if (existing) return; // already recorded
+
+  await supabase.from("transactions").insert([{
+    date,
+    description: `Investment — ${name}`,
+    amount:      parseFloat(amount.toFixed(2)),
+    type:        "debit",
+    category:    "Investment",
+    account:     account || null,
+    source:      "auto",
+    gmail_msg_id: dedupKey,
+  }]);
+
+  revalidateTag("transactions");
+}
 
 const getCachedHoldings = unstable_cache(
   async () => {
@@ -122,6 +165,17 @@ export async function POST(req: NextRequest) {
 
     revalidateTag("holdings");
 
+    // Auto-create an Investment transaction for the incremental amount added
+    const investedAmount = newUnits * newBuyPrice;
+    const dedupKey = `holding_${existing.id}_${Date.now()}`;
+    await createInvestmentTransaction(supabase, {
+      name:    existing.name as string,
+      amount:  investedAmount,
+      account: (account || existing.account) as string | null,
+      dedupKey,
+      date:    new Date().toISOString().split("T")[0],
+    });
+
     return NextResponse.json(
       { ...updated, merged: true, addedUnits: newUnits, prevBuyPrice: existingBuyPrice },
       { status: 200 }
@@ -152,6 +206,17 @@ export async function POST(req: NextRequest) {
   }
 
   revalidateTag("holdings");
+
+  // Auto-create an Investment transaction for the full amount
+  const investedAmount = newUnits * newBuyPrice;
+  const dedupKey = `holding_${data.id}_${Date.now()}`;
+  await createInvestmentTransaction(supabase, {
+    name:    data.name as string,
+    amount:  investedAmount,
+    account: account || null,
+    dedupKey,
+    date:    new Date().toISOString().split("T")[0],
+  });
 
   return NextResponse.json(data, { status: 201 });
 }
