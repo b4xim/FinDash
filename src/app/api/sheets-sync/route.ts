@@ -23,17 +23,40 @@ export const maxDuration = 60;
 
 // ── Category mapping: Sheets → FinDash ───────────────────────
 const CATEGORY_MAP: Record<string, Category> = {
-  "Food":          "Food & Dining",
-  "Transport":     "Transport",
-  "Rent":          "Rent",
-  "Shopping":      "Shopping",
-  "Entertainment": "Entertainment",
-  "Health":        "Healthcare",
-  "EMI":           "Other",
-  "Utilities":     "Utilities",
-  "Subscriptions": "Entertainment",
-  "Misc":          "Other",
+  // Food
+  "Food":            "Food & Dining",
+  "Food & Dining":   "Food & Dining",
+  "Groceries":       "Food & Dining",
+  // Transport
+  "Transport":       "Transport",
+  "Travel":          "Transport",
+  // Housing
+  "Rent":            "Rent",
+  // Shopping
+  "Shopping":        "Shopping",
+  // Entertainment
+  "Entertainment":   "Entertainment",
+  "Subscriptions":   "Entertainment",
+  // Health
+  "Health":          "Healthcare",
+  "Healthcare":      "Healthcare",
+  "Medical":         "Healthcare",
+  // Utilities
+  "Utilities":       "Utilities",
+  // Investment ← was missing — caused "Other" fallback
+  "Investment":      "Investment",
+  "Investments":     "Investment",
+  // Education
+  "Education":       "Education",
+  // Income
+  "Salary":          "Income",
+  "Income":          "Income",
+  // Catch-alls
+  "EMI":             "Other",
+  "Misc":            "Other",
+  "Other":           "Other",
 };
+
 
 // Row shape returned by the Apps Script ?action=export endpoint
 interface SheetExpenseRow {
@@ -110,26 +133,28 @@ async function runSheetSync(): Promise<{
       .maybeSingle();
 
     if (existing) {
-      // Preserve any category the user has manually set in the app —
-      // only revert to the sheet-mapped category if the user hasn't changed it
-      // (i.e. the stored category still matches what the sheet would have produced).
-      const preservedCategory = existing.category as Category;
-      const recordToUpdate = {
-        ...record,
-        // Keep the existing category unless it still equals what the sheet originally mapped,
-        // meaning the user hasn't touched it — detect a manual edit by checking if the
-        // stored category differs from what the sheet maps to now.
-        category: preservedCategory,
-      };
+      // Preserve any category the user has manually set in the app.
+      // HOWEVER: if the existing category is "Other" and the sheet now maps
+      // to something more specific, that means it was a mapping-gap on the
+      // previous sync (not a user override) — so update it to the correct one.
+      const existingCategory = existing.category as Category;
+      const categoryToUse =
+        existingCategory === "Other" && category !== "Other"
+          ? category          // correct a previous mapping-gap
+          : existingCategory; // respect any user-set override
+
+      const recordToUpdate = { ...record, category: categoryToUse };
 
       // Compare every field except category (which the user may have overridden)
+      const categoryChanged = categoryToUse !== existingCategory;
       const hasChanged =
-        existing.date        !== record.date        ||
-        existing.description !== record.description ||
-        existing.amount      !== record.amount       ||
-        (existing.account   ?? undefined) !== record.account   ||
-        (existing.notes     ?? undefined) !== record.notes     ||
-        (existing.necessary ?? undefined) !== record.necessary ||
+        categoryChanged                                              ||
+        existing.date        !== record.date                        ||
+        existing.description !== record.description                 ||
+        existing.amount      !== record.amount                      ||
+        (existing.account   ?? undefined) !== record.account        ||
+        (existing.notes     ?? undefined) !== record.notes          ||
+        (existing.necessary ?? undefined) !== record.necessary      ||
         existing.source      !== record.source;
 
       if (!hasChanged) {
