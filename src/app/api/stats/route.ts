@@ -131,7 +131,7 @@ export async function GET() {
     ?.filter(t => t.type === "credit")
     .reduce((s, t) => s + Number(t.amount), 0) ?? 0;
   const allTimeSpend = allTxns
-    ?.filter(t => t.type === "debit" && t.category !== "Investment")
+    ?.filter(t => t.type === "debit")
     .reduce((s, t) => s + Number(t.amount), 0) ?? 0;
 
   const netWorth  = (allTimeIncome - allTimeSpend) + investmentsTotal;

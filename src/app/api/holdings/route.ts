@@ -49,6 +49,7 @@ async function createInvestmentTransaction(
     category:    "Investment",
     account:     account || null,
     source:      "manual",
+    necessary:   "Necessary",
     gmail_msg_id: dedupKey,
   }]);
 
