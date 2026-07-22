@@ -1,17 +1,18 @@
 // ============================================================
 // POST /api/portfolio-analysis
-// Sends the user's full holdings to Google Gemini for a
-// comprehensive portfolio health analysis:
+// Sends the user's full holdings AND active SIPs to Google
+// Gemini for a comprehensive portfolio health analysis:
 //   - Sell / trim recommendations
 //   - Quantity (top-up / reduce) suggestions
 //   - Category / sector allocation advice
+//   - SIP health: per-SIP verdict, coverage gaps, diversification
 //   - Overall portfolio structure improvements
 // ============================================================
 
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/session";
 import { createClient } from "@supabase/supabase-js";
-import type { Holding } from "@/types";
+import type { Holding, SipEntry } from "@/types";
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -32,6 +33,15 @@ export interface CategoryInsight {
   advice: string;
 }
 
+export interface SipInsight {
+  sipId: string;
+  name: string;
+  verdict: "Continue" | "Increase" | "Decrease" | "Pause" | "Stop";
+  urgency: "High" | "Medium" | "Low";
+  reason: string;
+  suggestedAmount?: string; // e.g. "Increase to ₹5,000/mo", "Step up 10%"
+}
+
 export interface PortfolioAnalysisResult {
   overallScore: number;         // 1–10 portfolio health score
   overallSummary: string;       // 2–3 sentence executive summary
@@ -39,8 +49,11 @@ export interface PortfolioAnalysisResult {
   diversificationComment: string;
   holdingRecommendations: HoldingAnalysis[];
   categoryInsights: CategoryInsight[];
-  topActions: string[];         // 3-5 immediate action items
-  longTermAdvice: string;       // 2-3 sentences of strategic advice
+  sipInsights: SipInsight[];            // Per-SIP verdict
+  sipSummary: string;                   // 1–2 sentence SIP overview
+  monthlySipTotal: number;              // Total monthly SIP outflow (₹)
+  topActions: string[];                 // 3-5 immediate action items
+  longTermAdvice: string;               // 2-3 sentences of strategic advice
   analysedAt: string;
 }
 
@@ -68,6 +81,13 @@ export async function POST() {
   if (!holdings || holdings.length === 0) {
     return NextResponse.json({ error: "No holdings found to analyse" }, { status: 400 });
   }
+
+  // Fetch active SIPs
+  const { data: sips } = await supabase
+    .from("sips")
+    .select("*")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -114,6 +134,26 @@ export async function POST() {
     pct: totalPortfolioValue > 0 ? Math.round((val / totalPortfolioValue) * 100 * 10) / 10 : 0,
   }));
 
+  // ── Build SIP summary lines ──────────────────────────────────
+  const activeSips = (sips || []) as SipEntry[];
+  const monthlySipTotal = activeSips.reduce((sum, s) => {
+    // Normalise all frequencies to a monthly equivalent
+    if (s.frequency === "weekly") return sum + s.sip_amount * 4.33;
+    if (s.frequency === "quarterly") return sum + s.sip_amount / 3;
+    return sum + s.sip_amount;
+  }, 0);
+
+  const sipLines = activeSips.length > 0
+    ? activeSips
+        .map(
+          (s) =>
+            `ID:${s.id} | ${s.name} | Type:${s.asset_type} | Amount:₹${s.sip_amount}/${s.frequency} | ` +
+            `Date:${s.sip_date}th | Installments:${s.total_installments_done} | ` +
+            `TotalInvested:₹${s.total_invested} | StepUp:${s.step_up_pct ?? 0}% | Account:${s.account ?? "—"}`
+        )
+        .join("\n")
+    : "No active SIPs";
+
   // ── Build Gemini prompt ─────────────────────────────────────
   const holdingLines = holdingSummaries
     .map(
@@ -128,10 +168,12 @@ export async function POST() {
     .map((c) => `${c.category}: ₹${c.value} (${c.pct}%)`)
     .join(", ");
 
-  const prompt = `You are an expert Indian retail investment advisor. Analyse this portfolio and return a detailed, actionable JSON report.
+  const prompt = `You are an expert Indian retail investment advisor. Analyse this portfolio (holdings + active SIPs) and return a detailed, actionable JSON report.
 
 TOTAL PORTFOLIO VALUE: ₹${Math.round(totalPortfolioValue).toLocaleString("en-IN")}
 NUMBER OF HOLDINGS: ${holdings.length}
+ACTIVE SIPs: ${activeSips.length}
+MONTHLY SIP OUTFLOW: ₹${Math.round(monthlySipTotal).toLocaleString("en-IN")}
 
 HOLDINGS (each line: ID | Name | Ticker | Type | Units | BuyPrice | CurrentPrice | CurrentValue | Gain/Loss% | Portfolio Weight%):
 ${holdingLines}
@@ -139,13 +181,16 @@ ${holdingLines}
 CURRENT ALLOCATION:
 ${categoryLines}
 
+ACTIVE SIPs (each line: ID | Name | Type | Amount/Frequency | SIP-Date | Installments Done | Total Invested | Step-Up% | Account):
+${sipLines}
+
 Provide a comprehensive analysis with the following JSON structure. Return ONLY valid JSON, no markdown, no explanation:
 
 {
-  "overallScore": <integer 1-10, portfolio health score>,
-  "overallSummary": "<2-3 sentences summarising overall portfolio health, key strengths and weaknesses>",
+  "overallScore": <integer 1-10, portfolio health score — factor in both holdings AND SIPs>,
+  "overallSummary": "<2-3 sentences summarising overall portfolio health including SIP discipline, key strengths and weaknesses>",
   "riskProfile": "<one of: Conservative, Moderate, Aggressive>",
-  "diversificationComment": "<1-2 sentences about diversification quality>",
+  "diversificationComment": "<1-2 sentences about diversification quality across both holdings and SIPs>",
   "holdingRecommendations": [
     {
       "holdingId": "<ID from the holding>",
@@ -153,7 +198,7 @@ Provide a comprehensive analysis with the following JSON structure. Return ONLY 
       "action": "<one of: Hold, Sell, Trim, Add More, Reduce>",
       "urgency": "<one of: High, Medium, Low>",
       "reason": "<concise 1-2 sentence rationale tailored to this specific holding's metrics>",
-      "suggestedQtyChange": "<optional: e.g. '+50 units', 'Sell 30%', 'Exit fully', 'Add ₹5,000 SIP'>", 
+      "suggestedQtyChange": "<optional: e.g. '+50 units', 'Sell 30%', 'Exit fully', 'Add ₹5,000 SIP'>"
     }
   ],
   "categoryInsights": [
@@ -165,8 +210,20 @@ Provide a comprehensive analysis with the following JSON structure. Return ONLY 
       "advice": "<1 sentence specific advice for this category>"
     }
   ],
+  "sipInsights": [
+    {
+      "sipId": "<ID from the SIP>",
+      "name": "<SIP name>",
+      "verdict": "<one of: Continue, Increase, Decrease, Pause, Stop>",
+      "urgency": "<one of: High, Medium, Low>",
+      "reason": "<concise 1-2 sentence rationale considering amount, frequency, asset type, and alignment with portfolio>",
+      "suggestedAmount": "<optional: e.g. 'Increase to ₹5,000/mo', 'Step up 10% annually', 'Redirect to index fund SIP'>"
+    }
+  ],
+  "sipSummary": "<1-2 sentences overall SIP health verdict — covering SIP discipline, coverage of holdings, and whether SIP amounts are adequate given the portfolio size>",
+  "monthlySipTotal": <monthly SIP total as a number (₹)>,
   "topActions": ["<action 1>", "<action 2>", "<action 3>", "<action 4 if needed>", "<action 5 if needed>"],
-  "longTermAdvice": "<2-3 sentences of strategic long-term wealth building advice specific to this portfolio>"
+  "longTermAdvice": "<2-3 sentences of strategic long-term wealth building advice specific to this portfolio and SIP strategy>"
 }
 
 Rules:
@@ -175,6 +232,10 @@ Rules:
 - If a holding has >25% weight, flag it as over-concentrated regardless of performance.
 - If gain/loss is below -15%, suggest reviewing for a potential tax-loss harvest or averaging down.
 - If gain/loss is above +100%, suggest considering partial profit booking.
+- For SIPs: if monthly SIP outflow is <5% of portfolio value, suggest increasing SIP amounts.
+- For SIPs: flag any SIP that overlaps heavily with an existing holding (same fund/ticker) to avoid double-counting.
+- For SIPs: if no step-up is configured, recommend an annual step-up of 10–15%.
+- If there are no active SIPs, strongly recommend starting at least one index fund SIP.
 - Prioritise actionability — every recommendation must be concrete.`;
 
   try {
@@ -206,6 +267,10 @@ Rules:
 
     const result: PortfolioAnalysisResult = {
       ...analysis,
+      // Ensure sipInsights is always an array even if AI omits it
+      sipInsights: analysis.sipInsights ?? [],
+      sipSummary: analysis.sipSummary ?? "",
+      monthlySipTotal: analysis.monthlySipTotal ?? Math.round(monthlySipTotal),
       analysedAt: new Date().toISOString(),
     };
 

@@ -26,7 +26,7 @@ import {
   ArrowDownRight,
   X,
 } from "lucide-react";
-import type { PortfolioAnalysisResult, HoldingAnalysis, CategoryInsight } from "@/app/api/portfolio-analysis/route";
+import type { PortfolioAnalysisResult, HoldingAnalysis, CategoryInsight, SipInsight } from "@/app/api/portfolio-analysis/route";
 
 // ── Action styling helpers ─────────────────────────────────────
 
@@ -93,6 +93,42 @@ const ASSET_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+const VERDICT_CONFIG: Record<
+  SipInsight["verdict"],
+  { label: string; colorClass: string; bgClass: string; icon: React.ReactNode }
+> = {
+  "Continue": {
+    label: "Continue",
+    colorClass: "text-emerald-fin",
+    bgClass: "bg-emerald-fin/10",
+    icon: <CheckCircle size={12} />,
+  },
+  "Increase": {
+    label: "Increase",
+    colorClass: "text-sky-400",
+    bgClass: "bg-sky-400/10",
+    icon: <ArrowUpRight size={12} />,
+  },
+  "Decrease": {
+    label: "Decrease",
+    colorClass: "text-amber-400",
+    bgClass: "bg-amber-400/10",
+    icon: <ArrowDownRight size={12} />,
+  },
+  "Pause": {
+    label: "Pause",
+    colorClass: "text-orange-400",
+    bgClass: "bg-orange-400/10",
+    icon: <Minus size={12} />,
+  },
+  "Stop": {
+    label: "Stop",
+    colorClass: "text-rose-fin",
+    bgClass: "bg-rose-fin/10",
+    icon: <TrendingDown size={12} />,
+  },
+};
+
 // ── Score ring visual ──────────────────────────────────────────
 
 function ScoreRing({ score }: { score: number }) {
@@ -133,13 +169,19 @@ export default function AIPortfolioAnalysis() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState<"holdings" | "categories" | "strategy">("holdings");
+  const [activeTab, setActiveTab] = useState<"holdings" | "categories" | "sips" | "strategy">("holdings");
 
   useEffect(() => {
     try {
       const storedAnalysis = localStorage.getItem("aiPortfolioAnalysis_data");
       if (storedAnalysis) {
-        setAnalysis(JSON.parse(storedAnalysis));
+        const parsed = JSON.parse(storedAnalysis);
+        // Discard old cached analyses that pre-date the SIP fields
+        if (!Array.isArray(parsed.sipInsights)) {
+          localStorage.removeItem("aiPortfolioAnalysis_data");
+        } else {
+          setAnalysis(parsed);
+        }
       }
     } catch (e) {
       console.error("Failed to load portfolio analysis from localStorage", e);
@@ -202,7 +244,7 @@ export default function AIPortfolioAnalysis() {
             <p className="text-text-muted text-sm">
               {analysis
                 ? `Last analysed: ${new Date(analysis.analysedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`
-                : "Get personalised sell signals, rebalancing tips & more"}
+                : "Get personalised sell signals, SIP verdicts, rebalancing tips & more"}
             </p>
           </div>
         </div>
@@ -254,7 +296,7 @@ export default function AIPortfolioAnalysis() {
             </div>
             <p className="text-text-primary font-medium">AI is reviewing your portfolio…</p>
             <p className="text-text-muted text-sm">
-              Analysing holdings, allocation, gain/loss ratios, and building personalised recommendations.
+              Analysing holdings, SIPs, allocation, gain/loss ratios, and building personalised recommendations.
               This may take 10–20 seconds.
             </p>
             <div className="flex justify-center gap-1 pt-1">
@@ -336,12 +378,12 @@ export default function AIPortfolioAnalysis() {
           )}
 
           {/* ── Tab navigation ── */}
-          <div className="px-6 mb-4 flex gap-1 border-b border-white/5">
-            {(["holdings", "categories", "strategy"] as const).map((tab) => (
+          <div className="px-6 mb-4 flex gap-1 border-b border-white/5 overflow-x-auto">
+            {(["holdings", "categories", "sips", "strategy"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors capitalize ${
+                className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors capitalize whitespace-nowrap ${
                   activeTab === tab
                     ? "text-violet-light border-b-2 border-violet-light -mb-px bg-violet/5"
                     : "text-text-muted hover:text-text-secondary"
@@ -349,6 +391,16 @@ export default function AIPortfolioAnalysis() {
               >
                 {tab === "holdings" && <span className="flex items-center gap-1.5"><TrendingUp size={13} /> Holdings</span>}
                 {tab === "categories" && <span className="flex items-center gap-1.5"><BarChart3 size={13} /> Allocation</span>}
+                {tab === "sips" && (
+                  <span className="flex items-center gap-1.5">
+                    <Target size={13} /> SIPs
+                    {(analysis?.sipInsights?.length ?? 0) > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-violet/30 text-violet-light text-[9px] font-bold flex items-center justify-center">
+                        {analysis!.sipInsights.length}
+                      </span>
+                    )}
+                  </span>
+                )}
                 {tab === "strategy" && <span className="flex items-center gap-1.5"><Lightbulb size={13} /> Strategy</span>}
               </button>
             ))}
@@ -394,6 +446,80 @@ export default function AIPortfolioAnalysis() {
                       </div>
 
                       <p className="text-text-secondary text-xs mt-2.5 leading-relaxed">{rec.reason}</p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* ── SIPs tab ── */}
+          {activeTab === "sips" && (
+            <div className="px-6 pb-6 space-y-3">
+              {/* SIP overview banner */}
+              {analysis.sipSummary && (
+                <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4 flex items-start gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-sky-400/10 flex items-center justify-center flex-shrink-0">
+                    <Target size={16} className="text-sky-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+                      <p className="text-sky-400 font-medium text-sm">SIP Health Overview</p>
+                      {analysis.monthlySipTotal > 0 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-sky-400/10 text-sky-400 font-mono">
+                          ₹{Math.round(analysis.monthlySipTotal).toLocaleString("en-IN")}/mo
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-text-secondary text-xs leading-relaxed">{analysis.sipSummary}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* No SIPs state */}
+              {(!analysis.sipInsights || analysis.sipInsights.length === 0) ? (
+                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-6 text-center">
+                  <Target size={28} className="text-text-muted mx-auto mb-2" />
+                  <p className="text-text-secondary text-sm font-medium mb-1">No active SIPs found</p>
+                  <p className="text-text-muted text-xs leading-relaxed">
+                    The AI recommends starting at least one index fund SIP to build wealth systematically.
+                  </p>
+                </div>
+              ) : (
+                analysis.sipInsights.map((sip) => {
+                  const verdictCfg = VERDICT_CONFIG[sip.verdict] ?? VERDICT_CONFIG["Continue"];
+                  const urgencyCfg = URGENCY_CONFIG[sip.urgency];
+
+                  return (
+                    <div
+                      key={sip.sipId}
+                      className="rounded-xl border border-white/5 bg-white/[0.02] p-4 hover:border-white/10 transition-colors"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full ${verdictCfg.colorClass} ${verdictCfg.bgClass}`}
+                          >
+                            {verdictCfg.icon}
+                            {verdictCfg.label}
+                          </span>
+                          <span className="font-medium text-text-primary text-sm truncate">{sip.name}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {sip.suggestedAmount && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-text-secondary font-mono">
+                              {sip.suggestedAmount}
+                            </span>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <div className={`w-1.5 h-1.5 rounded-full ${urgencyCfg.dot}`} />
+                            <span className="text-[10px] text-text-muted">{urgencyCfg.label}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-text-secondary text-xs mt-2.5 leading-relaxed">{sip.reason}</p>
                     </div>
                   );
                 })
